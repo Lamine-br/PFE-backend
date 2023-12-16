@@ -1,9 +1,11 @@
 const express = require("express");
 const cors = require("cors");
-const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const User = require("../models/users");
 const connectDB = require("../database/connectDB");
+require("dotenv").config();
+
+const { createAccessToken } = require("./utils/tokens");
 
 const service = express();
 const PORT = 3000;
@@ -37,16 +39,7 @@ service.post("/auth/login", async (req, res) => {
 		}
 
 		// Password is valid, create a JWT token for authentication
-		let accessToken = jwt.sign(
-			{
-				data: {
-					userId: user._id,
-					email: user.email,
-				},
-			},
-			"access",
-			{ expiresIn: 60 * 60 }
-		);
+		let accessToken = createAccessToken(user);
 
 		return res
 			.status(200)
