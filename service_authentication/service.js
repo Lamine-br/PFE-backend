@@ -6,7 +6,11 @@ const connectDB = require("../database/connectDB");
 require("dotenv").config();
 const { verifyToken } = require("./middlewares/verifyToken");
 
-const { createAccessToken } = require("./utils/tokens");
+const {
+	createAccessToken,
+	createRefreshToken,
+	isValidRefreshToken,
+} = require("./utils/tokens");
 
 const service = express();
 const PORT = 3000;
@@ -41,10 +45,13 @@ service.post("/auth/login", async (req, res) => {
 
 		// Password is valid, create a JWT token for authentication
 		let accessToken = createAccessToken(user);
+		let refreshToken = createRefreshToken(user);
 
-		return res
-			.status(200)
-			.json({ message: "User successfully logged in", accessToken });
+		return res.status(200).json({
+			message: "User successfully logged in",
+			accessToken,
+			refreshToken,
+		});
 	} catch (error) {
 		console.log(error);
 		return res.status(500).json({ message: "Internal server error" });
@@ -80,8 +87,20 @@ service.post("/auth/register", async (req, res) => {
 	}
 });
 
-service.post("/auth/refreshToken", verifyToken, (req, res) => {
-	return res.status(201).json({ message: "Hi there" });
+service.post("/auth/refresh", (req, res) => {
+	const user = req.body.user;
+	const refreshToken = req.body.refreshToken;
+
+	// Validate the refresh token (check expiration, signature, etc.)
+	if (!isValidRefreshToken(refreshToken)) {
+		return res.status(401).json({ message: "Invalid refresh token" });
+	}
+
+	// If the refresh token is valid, generate a new access token
+	const newAccessToken = createAccessToken(user);
+
+	// Send the new access token in the response
+	res.status(200).json({ accessToken: newAccessToken });
 });
 
 service.listen(PORT, () => console.log("Service is running at port " + PORT));
