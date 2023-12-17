@@ -1,8 +1,9 @@
 const jwt = require("jsonwebtoken");
 
-// Middleware function to verify JWT token
-function verifyToken(req, res, next) {
-	const header = req.headers["authorization"]; // The token is passed in the authorization header
+// Middleware to verify access token
+function verifyAccessToken(req, res, next) {
+	// In this case, the token is passed in the authorization header
+	const header = req.headers["authorization"];
 
 	if (!header || !header.startsWith("Bearer ")) {
 		return res.status(401).json({ message: "Invalid token format" });
@@ -26,4 +27,4 @@ function verifyToken(req, res, next) {
 	});
 }
 
-module.exports = { verifyToken };
+module.exports = { verifyAccessToken };

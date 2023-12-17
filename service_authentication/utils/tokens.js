@@ -20,17 +20,4 @@ const createRefreshToken = (userPayload) => {
 	);
 };
 
-const isValidRefreshToken = (refreshToken) => {
-	try {
-		const decoded = jwt.verify(
-			refreshToken,
-			`${process.env.JWT_REFRESH_SECRET}`
-		);
-
-		return true;
-	} catch (error) {
-		return false;
-	}
-};
-
-module.exports = { createAccessToken, createRefreshToken, isValidRefreshToken };
+module.exports = { createAccessToken, createRefreshToken };
