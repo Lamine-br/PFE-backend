@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt");
 const User = require("../models/users");
 const connectDB = require("../database/connectDB");
 require("dotenv").config();
+const { verifyToken } = require("./middlewares/verifyToken");
 
 const { createAccessToken } = require("./utils/tokens");
 
@@ -77,6 +78,10 @@ service.post("/auth/register", async (req, res) => {
 	} catch (error) {
 		return res.status(500).json({ message: "Internal server error" });
 	}
+});
+
+service.post("/auth/refreshToken", verifyToken, (req, res) => {
+	return res.status(201).json({ message: "Hi there" });
 });
 
 service.listen(PORT, () => console.log("Service is running at port " + PORT));
