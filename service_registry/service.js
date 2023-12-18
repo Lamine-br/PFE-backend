@@ -1,17 +1,63 @@
 const express = require("express");
-const app = express();
-const PORT = 4000;
+const service = express();
+const ServiceRegistry = require("./lib/ServiceRegistry");
+
+const PORT = 3000;
 const connectDB = require("../database/connectDB");
+
+const serviceRegisrty = new ServiceRegistry();
 
 connectDB();
 
-app.get("/", (req, res) => {
-	res.send("Welcome to your Express microservice!");
+// This microservice will register the services available
+service.put(
+	"/register/:servicename/:serviceversion/:serviceport",
+	(req, res) => {
+		const { servicename, serviceversion, serviceport } = req.params;
+
+		const serviceip = req.socket.remoteAddress.includes("::")
+			? `[${req.socket.remoteAddress}]`
+			: req.socket.remoteAddress;
+
+		const serviceKey = serviceRegisrty.register(
+			servicename,
+			serviceversion,
+			serviceip,
+			serviceport
+		);
+
+		return res.json({ result: serviceKey });
+	}
+);
+
+service.delete(
+	"/unregister/:servicename/:serviceversion/:serviceport",
+	(req, res) => {
+		const { servicename, serviceversion, serviceport } = req.params;
+
+		const serviceip = req.socket.remoteAddress.includes("::")
+			? `[${req.socket.remoteAddress}]`
+			: req.socket.remoteAddress;
+
+		const serviceKey = serviceRegisrty.unregister(
+			servicename,
+			serviceversion,
+			serviceip,
+			serviceport
+		);
+
+		return res.json({ result: `Deleted ${serviceKey}` });
+	}
+);
+
+service.get("/find/:servicename/:serviceversion", (req, res) => {
+	const { servicename, serviceversion } = req.params;
+	const svc = serviceRegisrty.get(servicename, serviceversion);
+	if (!svc) return res.status(404).json({ result: "Service not found" });
+	return res.json(svc);
 });
 
-// This microservice will register the services available
-
 // Start the server
-app.listen(PORT, () => {
+service.listen(PORT, () => {
 	console.log(`Service running on port ${PORT}`);
 });
