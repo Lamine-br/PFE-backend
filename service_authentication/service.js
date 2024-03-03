@@ -1,7 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
-const User = require("../models/users");
+const User = require("../models/user");
+const Chercheur = require("../models/chercheur");
 const jwt = require("jsonwebtoken");
 const connectDB = require("../database/connectDB");
 require("dotenv").config();
@@ -79,6 +80,50 @@ service.post("/auth/register", async (req, res) => {
 
 		console.log("User added");
 		return res.status(201).json(savedUser);
+	} catch (error) {
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.post("/auth/register/chercheur", async (req, res) => {
+	const {
+		email,
+		password,
+		nom,
+		prenom,
+		date_naissance,
+		nationalite,
+		numero,
+		ville,
+		cv,
+	} = req.body;
+
+	if (!email || !password) {
+		return res.status(400).json({ message: "Username or password missing" });
+	}
+
+	try {
+		// Hash the password before saving it
+		const hashedPassword = await bcrypt.hash(password, 10);
+
+		// Create a new User instance with hashed password
+		const chercheur = new Chercheur({
+			email,
+			password: hashedPassword,
+			nom,
+			prenom,
+			date_naissance,
+			nationalite,
+			numero,
+			ville,
+			cv,
+		});
+
+		// Save the user to the database
+		const chercheurEngst = await chercheur.save();
+
+		console.log("User added");
+		return res.status(201).json(chercheurEngst);
 	} catch (error) {
 		return res.status(500).json({ message: "Internal server error" });
 	}

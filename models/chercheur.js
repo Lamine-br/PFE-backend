@@ -3,6 +3,14 @@ const Schema = mongoose.Schema;
 
 const chercheurSchema = new Schema(
 	{
+		email: {
+			type: String,
+			required: true,
+		},
+		password: {
+			type: String,
+			required: true,
+		},
 		nom: {
 			type: String,
 			required: true,
@@ -20,10 +28,6 @@ const chercheurSchema = new Schema(
 			required: false,
 		},
 		numero: {
-			type: String,
-			required: false,
-		},
-		email: {
 			type: String,
 			required: false,
 		},
