@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt");
 const User = require("../models/user");
 const Chercheur = require("../models/chercheur");
 const Employeur = require("../models/employeur");
+const Contact = require("../models/contact");
 const connectDB = require("../database/connectDB");
 require("dotenv").config();
 const { verifyRefreshToken } = require("./middlewares/verifyRefreshToken");
@@ -140,6 +141,7 @@ service.post("/auth/register/employeur", async (req, res) => {
 		linkedin,
 		facebook,
 		adresse,
+		contacts,
 	} = req.body;
 
 	if (!email || !password) {
@@ -162,6 +164,15 @@ service.post("/auth/register/employeur", async (req, res) => {
 			facebook,
 			adresse,
 		});
+
+		const savedContacts = await Promise.all(
+			contacts.map(async (contactData) => {
+				const contactInstance = new Contact(contactData);
+				return await contactInstance.save();
+			})
+		);
+
+		employeur.contacts = savedContacts.map((contact) => contact._id);
 
 		// Save the user to the database
 		const employeurEngst = await employeur.save();

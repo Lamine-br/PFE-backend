@@ -3,6 +3,14 @@ const Schema = mongoose.Schema;
 
 const employeurSchema = new Schema(
 	{
+		email: {
+			type: String,
+			required: true,
+		},
+		password: {
+			type: String,
+			required: true,
+		},
 		entreprise: {
 			type: String,
 			required: true,

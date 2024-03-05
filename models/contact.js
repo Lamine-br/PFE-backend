@@ -5,11 +5,7 @@ const contactSchema = new Schema(
 	{
 		nom: {
 			type: String,
-			required: true,
-		},
-		prenom: {
-			type: String,
-			required: true,
+			required: false,
 		},
 		numero: {
 			type: String,
