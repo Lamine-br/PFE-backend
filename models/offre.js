@@ -31,12 +31,10 @@ const offreSchema = new Schema(
 			type: String,
 			required: false,
 		},
-		employeurs: [
-			{
-				type: mongoose.Schema.Types.ObjectId,
-				ref: "Employeur",
-			},
-		],
+		employeur: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: "Employeur",
+		},
 		candidatures: [
 			{
 				type: mongoose.Schema.Types.ObjectId,
