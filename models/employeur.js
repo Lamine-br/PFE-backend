@@ -23,6 +23,10 @@ const employeurSchema = new Schema(
 			type: String,
 			required: false,
 		},
+		numero_EDA: {
+			type: String,
+			required: false,
+		},
 		site_web: {
 			type: String,
 			required: false,
