@@ -3,7 +3,6 @@ const cors = require("cors");
 const Employeur = require("../models/employeur");
 const Offre = require("../models/offre");
 const connectDB = require("../database/connectDB");
-require("dotenv").config();
 
 const service = express();
 const PORT = 3000;
@@ -15,14 +14,20 @@ service.use(express.json());
 connectDB();
 
 service.post("/employeur/offre", async (req, res) => {
-	const { offre } = req.body;
+	const { nom, metier, description, debut, fin, remuneration, date } = req.body;
 
 	try {
-		const nouvelleOffre = new Offre({
-			offre,
+		const offre = new Offre({
+			nom,
+			metier,
+			description,
+			debut,
+			fin,
+			remuneration,
+			date,
 		});
 
-		const offreErgst = await nouvelleOffre.save();
+		const offreErgst = await offre.save();
 
 		console.log("Offre ajoutée");
 		return res.status(201).json(offreErgst);
