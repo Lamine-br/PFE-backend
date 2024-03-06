@@ -146,7 +146,7 @@ service.post("/auth/register/employeur", async (req, res) => {
 	} = req.body;
 
 	if (!email || !password) {
-		return res.status(400).json({ message: "Username or password missing" });
+		return res.status(400).json({ message: "email or password missing" });
 	}
 
 	try {
