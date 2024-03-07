@@ -23,7 +23,7 @@ service.get("/employeur/offres", verifyAccessToken, async (req, res) => {
 	}
 });
 
-service.post("/employeur/offres/addOffre", async (req, res) => {
+service.post("/employeur/addOffre", async (req, res) => {
 	const { nom, metier, description, debut, fin, remuneration, date } = req.body;
 
 	try {
