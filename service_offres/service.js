@@ -1,8 +1,8 @@
 const express = require("express");
 const cors = require("cors");
-const Employeur = require("../models/employeur");
 const Offre = require("../models/offre");
 const connectDB = require("../database/connectDB");
+const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
 
 const service = express();
 const PORT = 3000;
@@ -13,11 +13,12 @@ service.use(express.json());
 
 connectDB();
 
-service.get("/employeur/offres", async (req, res) => {
+service.get("/employeur/offres", verifyAccessToken, async (req, res) => {
 	try {
-		const offres = await Offre.findAll();
-		return res.status(201).json(offres);
+		const offres = await Offre.find();
+		return res.status(200).json(offres);
 	} catch (error) {
+		console.log(error);
 		return res.status(500).json({ message: "Internal server error" });
 	}
 });
