@@ -13,6 +13,15 @@ service.use(express.json());
 
 connectDB();
 
+service.get("/employeur/offres", async (req, res) => {
+	try {
+		const offres = await Offre.findAll();
+		return res.status(201).json(offres);
+	} catch (error) {
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
 service.post("/employeur/offres/addOffre", async (req, res) => {
 	const { nom, metier, description, debut, fin, remuneration, date } = req.body;
 
