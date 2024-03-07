@@ -13,7 +13,7 @@ service.use(express.json());
 
 connectDB();
 
-service.post("/employeur/offre", async (req, res) => {
+service.post("/employeur/offres/addOffre", async (req, res) => {
 	const { nom, metier, description, debut, fin, remuneration, date } = req.body;
 
 	try {

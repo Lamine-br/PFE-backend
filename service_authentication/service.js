@@ -57,6 +57,43 @@ service.post("/auth/login", async (req, res) => {
 	}
 });
 
+service.post("/auth/login/employeur", async (req, res) => {
+	const { email, password } = req.body;
+
+	if (!email || !password) {
+		return res.status(400).json({ message: "Email or Password missing" });
+	}
+
+	try {
+		// Find the user by email in the database
+		const employeur = await Employeur.findOne({ email });
+
+		if (!employeur) {
+			return res.status(401).json({ message: "Invalid credentials" });
+		}
+
+		// Compare the provided password with the hashed password stored in the database
+		const isPasswordValid = await bcrypt.compare(password, employeur.password);
+
+		if (!isPasswordValid) {
+			return res.status(401).json({ message: "Invalid credentials" });
+		}
+
+		// Password is valid, create an access token and a refresh token
+		let accessToken = createAccessToken(employeur);
+		let refreshToken = createRefreshToken(employeur);
+
+		return res.status(200).json({
+			message: "Employeur successfully logged in",
+			accessToken,
+			refreshToken,
+		});
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
 service.post("/auth/register", async (req, res) => {
 	const { firstName, lastName, email, password } = req.body;
 
