@@ -6,7 +6,6 @@ const Chercheur = require("../models/chercheur");
 const Employeur = require("../models/employeur");
 const Contact = require("../models/contact");
 const connectDB = require("../database/connectDB");
-require("dotenv").config();
 const { verifyRefreshToken } = require("./middlewares/verifyRefreshToken");
 
 const { createAccessToken, createRefreshToken } = require("./utils/tokens");

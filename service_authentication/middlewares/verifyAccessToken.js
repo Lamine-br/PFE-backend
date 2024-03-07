@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 // Middleware to verify access token
 function verifyAccessToken(req, res, next) {

@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 const verifyRefreshToken = (req, res, next) => {
 	const refreshToken = req.body.refreshToken;

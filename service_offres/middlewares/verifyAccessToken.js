@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 // Middleware to verify access token
 function verifyAccessToken(req, res, next) {
@@ -16,6 +17,7 @@ function verifyAccessToken(req, res, next) {
 		return res.status(401).json({ message: "No token provided" });
 	}
 
+	console.log(token, process.env.JWT_SECRET, "token");
 	// Verify the token
 	jwt.verify(token, `${process.env.JWT_SECRET}`, (err, decoded) => {
 		if (err) {
