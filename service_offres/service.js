@@ -15,7 +15,9 @@ connectDB();
 
 service.get("/employeur/offres", verifyAccessToken, async (req, res) => {
 	try {
-		const offres = await Offre.find();
+		console.log(req.decoded.userPayload._id);
+		const userId = req.decoded.userPayload._id;
+		const offres = await Offre.find({ employeur: userId });
 		return res.status(200).json(offres);
 	} catch (error) {
 		console.log(error);
@@ -23,8 +25,9 @@ service.get("/employeur/offres", verifyAccessToken, async (req, res) => {
 	}
 });
 
-service.post("/employeur/addOffre", async (req, res) => {
+service.post("/employeur/addOffre", verifyAccessToken, async (req, res) => {
 	const { nom, metier, description, debut, fin, remuneration, date } = req.body;
+	const employeur = req.decoded.userPayload._id;
 
 	try {
 		const offre = new Offre({
@@ -35,6 +38,7 @@ service.post("/employeur/addOffre", async (req, res) => {
 			fin,
 			remuneration,
 			date,
+			employeur,
 		});
 
 		const offreErgst = await offre.save();
