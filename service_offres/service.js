@@ -17,8 +17,6 @@ service.get("/employeur/offres/:id", verifyAccessToken, async (req, res) => {
 	const offreId = req.params.id;
 	try {
 		const userId = req.decoded.userPayload._id;
-
-		console.log(offreId, userId);
 		const offre = await Offre.findOne({ _id: offreId, employeur: userId });
 
 		if (!offre) {
