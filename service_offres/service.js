@@ -58,4 +58,21 @@ service.post("/employeur/offres/add", verifyAccessToken, async (req, res) => {
 	}
 });
 
+service.delete("/employeur/offres/:id", verifyAccessToken, async (req, res) => {
+	const offreId = req.params.id;
+
+	try {
+		const result = await Offre.deleteOne({ _id: offreId });
+
+		if (result.deletedCount === 0) {
+			return res.status(404).json({ message: "Offer not found" });
+		}
+		console.log("Offre supprimée");
+		return res.status(200).json({ message: "Offre supprimée avec succès" });
+	} catch (error) {
+		console.error(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
 service.listen(PORT, () => console.log("Service is running at port " + PORT));
