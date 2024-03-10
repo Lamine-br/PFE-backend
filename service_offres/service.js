@@ -30,7 +30,13 @@ service.post("/employeur/addOffre", verifyAccessToken, async (req, res) => {
 	const employeur = req.decoded.userPayload._id;
 
 	try {
-		const date = new Date();
+		const fulldate = new Date();
+
+		const annee = fulldate.getFullYear();
+		const mois = (fulldate.getMonth() + 1).toString().padStart(2, "0");
+		const jour = fulldate.getDate().toString().padStart(2, "0");
+
+		const date = `${annee}-${mois}-${jour}`;
 
 		const offre = new Offre({
 			titre,
