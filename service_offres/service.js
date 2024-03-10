@@ -13,6 +13,24 @@ service.use(express.json());
 
 connectDB();
 
+service.get("/employeur/offres/:id", verifyAccessToken, async (req, res) => {
+	const offreId = req.params.id;
+	try {
+		const userId = req.decoded.userPayload._id;
+
+		console.log(offreId, userId);
+		const offre = await Offre.findOne({ _id: offreId, employeur: userId });
+
+		if (!offre) {
+			return res.status(404).json({ message: "Offre non trouvée" });
+		}
+		return res.status(200).json(offre);
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
 service.get("/employeur/offres", verifyAccessToken, async (req, res) => {
 	try {
 		console.log(req.decoded.userPayload._id);

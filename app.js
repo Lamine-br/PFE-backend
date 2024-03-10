@@ -33,7 +33,7 @@ userRouter.all(
 
 // Associate routers with different paths
 app.use("/auth", authRouter);
-app.use("/user", userRouter);
+app.use("/employeur", userRouter);
 
 // Default route
 app.use("*", (req, res) => {
