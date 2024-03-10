@@ -26,11 +26,12 @@ service.get("/employeur/offres", verifyAccessToken, async (req, res) => {
 });
 
 service.post("/employeur/addOffre", verifyAccessToken, async (req, res) => {
-	const { titre, metier, description, debut, fin, remuneration, date } =
-		req.body;
+	const { titre, metier, description, debut, fin, remuneration } = req.body;
 	const employeur = req.decoded.userPayload._id;
 
 	try {
+		const date = new Date();
+
 		const offre = new Offre({
 			titre,
 			metier,
