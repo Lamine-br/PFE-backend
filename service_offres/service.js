@@ -74,6 +74,41 @@ service.post("/employeur/offres/add", verifyAccessToken, async (req, res) => {
 	}
 });
 
+service.put("/employeur/offres/:id", verifyAccessToken, async (req, res) => {
+	const { titre, metier, description, debut, fin, remuneration } = req.body;
+	const employeur = req.decoded.userPayload._id;
+	const id_offre = req.params.id;
+
+	try {
+		const offre = await Offre.findById(id_offre);
+
+		if (!offre) {
+			return res.status(404).json({ message: "Offre non trouvée" });
+		}
+
+		if (offre.employeur.toString() !== employeur) {
+			return res.status(403).json({
+				message: "Accès interdit ! Vous ne pouvez pas modifier cette offre.",
+			});
+		}
+
+		offre.titre = titre || offre.titre;
+		offre.metier = metier || offre.metier;
+		offre.description = description || offre.description;
+		offre.debut = debut || offre.debut;
+		offre.fin = fin || offre.fin;
+		offre.remuneration = remuneration || offre.remuneration;
+
+		const nouvelleOffre = await offre.save();
+
+		console.log("Offre mise à jour");
+		return res.status(200).json(nouvelleOffre);
+	} catch (error) {
+		console.error("Error updating offer:", error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
 service.delete("/employeur/offres/:id", verifyAccessToken, async (req, res) => {
 	const offreId = req.params.id;
 
