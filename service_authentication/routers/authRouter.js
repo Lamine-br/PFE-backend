@@ -6,11 +6,11 @@ const {
 	generateConfirmationCode,
 } = require("../utils/generateConfirmationCode");
 const bcrypt = require("bcrypt");
-const Chercheur = require("../models/chercheur");
-const Employeur = require("../models/employeur");
-const Contact = require("../models/contact");
-const ConfirmationCode = require("../models/confirmationCode");
-const Reponse = require("../models/reponse");
+const Chercheur = require("../../models/chercheur");
+const Employeur = require("../../models/employeur");
+const Contact = require("../../models/contact");
+const ConfirmationCode = require("../../models/confirmationCode");
+const Reponse = require("../../models/reponse");
 const { employeurController } = require("../controllers/employeurController");
 const authRouter = express.Router();
 

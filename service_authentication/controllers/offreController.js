@@ -1,9 +1,5 @@
-const Employeur = require("../models/employeur");
-const Offre = require("../models/offre");
-
-const connectDB = require("../database/connectDB");
-
-connectDB();
+const Employeur = require("../../models/employeur");
+const Offre = require("../../models/offre");
 
 const offreController = {
 	getOffre: async (req, res) => {
