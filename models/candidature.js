@@ -3,30 +3,28 @@ const Schema = mongoose.Schema;
 
 const candidatureSchema = new Schema(
 	{
-		cv: {
-			type: String,
-			required: true,
-		},
-		motivation: {
-			type: String,
-			required: false,
-		},
-		commentaire: {
-			type: String,
-			required: false,
+		dossier: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: "Dossier",
 		},
 		date: {
 			type: String,
 			required: false,
 		},
-		employeur: {
+		chercheur: {
 			type: mongoose.Schema.Types.ObjectId,
-			ref: "Employeur",
+			ref: "Chercheur",
 		},
 		offre: {
 			type: mongoose.Schema.Types.ObjectId,
 			ref: "Offre",
 		},
+		etiquettes: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Etiquette",
+			},
+		],
 	},
 	{ timestamps: true }
 );

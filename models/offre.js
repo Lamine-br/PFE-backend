@@ -8,8 +8,8 @@ const offreSchema = new Schema(
 			required: true,
 		},
 		metier: {
-			type: String,
-			required: false,
+			type: mongoose.Schema.Types.ObjectId,
+			ref: "Metier",
 		},
 		description: {
 			type: String,
@@ -41,6 +41,10 @@ const offreSchema = new Schema(
 				ref: "Candidature",
 			},
 		],
+		categorie: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: "Categorie",
+		},
 	},
 	{ timestamps: true }
 );
