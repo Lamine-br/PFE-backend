@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const Offre = require("../models/offre");
 const Metier = require("../models/metier");
+const Employeur = require("../models/employeur");
 const connectDB = require("../database/connectDB");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
 
@@ -37,8 +38,35 @@ service.get("/employeur/offres", verifyAccessToken, async (req, res) => {
 	try {
 		console.log(req.decoded.userPayload._id);
 		const userId = req.decoded.userPayload._id;
-		const offres = await Offre.find({ employeur: userId });
+		const offres = await Offre.find({ employeur: userId }).populate("metier");
 		return res.status(200).json(offres);
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.get("/offres", async (req, res) => {
+	try {
+		const offres = await Offre.find().populate("metier employeur");
+		return res.status(200).json(offres);
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.get("/offres/:id", async (req, res) => {
+	const offreId = req.params.id;
+	try {
+		const offre = await Offre.findOne({
+			_id: offreId,
+		}).populate("metier employeur");
+
+		if (!offre) {
+			return res.status(404).json({ message: "Offre non trouvée" });
+		}
+		return res.status(200).json(offre);
 	} catch (error) {
 		console.log(error);
 		return res.status(500).json({ message: "Internal server error" });
@@ -101,10 +129,18 @@ service.put("/employeur/offres/:id", verifyAccessToken, async (req, res) => {
 			return res.status(404).json({ message: "Offre non trouvée" });
 		}
 
-		if (offre.employeur.toString() !== employeur) {
-			return res.status(403).json({
-				message: "Accès interdit ! Vous ne pouvez pas modifier cette offre.",
-			});
+		const ancienMetier = offre.metier;
+		const nouveauMetier = metier;
+
+		if (ancienMetier !== nouveauMetier) {
+			await Metier.updateOne(
+				{ _id: ancienMetier },
+				{ $pull: { offres: id_offre } }
+			);
+			await Metier.updateOne(
+				{ _id: nouveauMetier },
+				{ $push: { offres: id_offre } }
+			);
 		}
 
 		offre.titre = titre || offre.titre;
