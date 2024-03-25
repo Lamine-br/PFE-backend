@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const Offre = require("../models/offre");
+const Metier = require("../models/metier");
 const connectDB = require("../database/connectDB");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
 
@@ -65,6 +66,8 @@ service.post("/employeur/offres/add", verifyAccessToken, async (req, res) => {
 			employeur,
 		});
 
+		console.log(offre);
+
 		const offreErgst = await offre.save();
 
 		console.log("Offre ajoutée");
@@ -120,6 +123,92 @@ service.delete("/employeur/offres/:id", verifyAccessToken, async (req, res) => {
 		}
 		console.log("Offre supprimée");
 		return res.status(200).json({ message: "Offre supprimée avec succès" });
+	} catch (error) {
+		console.error(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.post("/metiers/add", async (req, res) => {
+	const { nom, description, secteur } = req.body;
+
+	try {
+		const metier = new Metier({
+			nom,
+			description,
+			secteur,
+		});
+
+		const metierErgst = await metier.save();
+
+		console.log("Métier ajouté");
+		return res.status(201).json(metierErgst);
+	} catch (error) {
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.get("/metiers", async (req, res) => {
+	try {
+		const metiers = await Metier.find();
+		return res.status(200).json(metiers);
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.get("/metiers/:id", async (req, res) => {
+	const metierId = req.params.id;
+	try {
+		const metier = await Metier.findOne({ _id: metierId });
+
+		if (!metier) {
+			return res.status(404).json({ message: "Metier non trouvé" });
+		}
+		return res.status(200).json(metier);
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.put("/metiers/:id", async (req, res) => {
+	const { nom, secteur, description } = req.body;
+	const id_metier = req.params.id;
+
+	try {
+		const metier = await Metier.findById(id_metier);
+
+		if (!metier) {
+			return res.status(404).json({ message: "Metier non trouvé" });
+		}
+
+		metier.nom = nom || metier.nom;
+		metier.secteur = secteur || metier.secteur;
+		metier.description = description || metier.description;
+
+		const nouveeauMetier = await metier.save();
+
+		console.log("Métier mise à jour");
+		return res.status(200).json(nouveeauMetier);
+	} catch (error) {
+		console.error("Erreur lors de la modification :", error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.delete("/metiers/:id", async (req, res) => {
+	const metierId = req.params.id;
+
+	try {
+		const result = await Metier.deleteOne({ _id: metierId });
+
+		if (result.deletedCount === 0) {
+			return res.status(404).json({ message: "Métier non trouvé" });
+		}
+		console.log("Métier supprimé");
+		return res.status(200).json({ message: "Métier supprimé avec succès" });
 	} catch (error) {
 		console.error(error);
 		return res.status(500).json({ message: "Internal server error" });

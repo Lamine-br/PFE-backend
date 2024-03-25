@@ -5,7 +5,7 @@ const offreSchema = new Schema(
 	{
 		titre: {
 			type: String,
-			required: true,
+			required: false,
 		},
 		metier: {
 			type: mongoose.Schema.Types.ObjectId,
