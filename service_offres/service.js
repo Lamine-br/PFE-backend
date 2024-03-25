@@ -18,7 +18,10 @@ service.get("/employeur/offres/:id", verifyAccessToken, async (req, res) => {
 	const offreId = req.params.id;
 	try {
 		const userId = req.decoded.userPayload._id;
-		const offre = await Offre.findOne({ _id: offreId, employeur: userId });
+		const offre = await Offre.findOne({
+			_id: offreId,
+			employeur: userId,
+		}).populate("metier");
 
 		if (!offre) {
 			return res.status(404).json({ message: "Offre non trouvée" });
@@ -70,10 +73,19 @@ service.post("/employeur/offres/add", verifyAccessToken, async (req, res) => {
 
 		const offreErgst = await offre.save();
 
+		const metierExistant = await Metier.findById(metier);
+		if (!metierExistant) {
+			return res.status(404).json({ message: "Métier introuvable" });
+		}
+
+		metierExistant.offres.push(offreErgst._id);
+		await metierExistant.save();
+
 		console.log("Offre ajoutée");
 		return res.status(201).json(offreErgst);
 	} catch (error) {
-		return res.status(500).json({ message: "Internal server error" });
+		console.error(error);
+		return res.status(500).json({ message: "Erreur interne du serveur" });
 	}
 });
 
@@ -107,7 +119,7 @@ service.put("/employeur/offres/:id", verifyAccessToken, async (req, res) => {
 		console.log("Offre mise à jour");
 		return res.status(200).json(nouvelleOffre);
 	} catch (error) {
-		console.error("Error updating offer:", error);
+		console.log(error);
 		return res.status(500).json({ message: "Internal server error" });
 	}
 });
@@ -116,11 +128,22 @@ service.delete("/employeur/offres/:id", verifyAccessToken, async (req, res) => {
 	const offreId = req.params.id;
 
 	try {
-		const result = await Offre.deleteOne({ _id: offreId });
-
-		if (result.deletedCount === 0) {
-			return res.status(404).json({ message: "Offer not found" });
+		const offreExistante = await Offre.findById(offreId);
+		if (!offreExistante) {
+			return res.status(404).json({ message: "Offre introuvable" });
 		}
+
+		await Offre.findByIdAndDelete(offreId);
+
+		const metierId = offreExistante.metier;
+		const metier = await Metier.findById(metierId);
+		if (metier) {
+			metier.offres = metier.offres.filter(
+				(offre) => offre.toString() !== offreId
+			);
+			await metier.save();
+		}
+
 		console.log("Offre supprimée");
 		return res.status(200).json({ message: "Offre supprimée avec succès" });
 	} catch (error) {
