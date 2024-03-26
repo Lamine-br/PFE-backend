@@ -11,6 +11,10 @@ const candidatureSchema = new Schema(
 			type: String,
 			required: false,
 		},
+		status: {
+			type: String,
+			required: false,
+		},
 		chercheur: {
 			type: mongoose.Schema.Types.ObjectId,
 			ref: "Chercheur",

@@ -41,7 +41,7 @@ const offreController = {
 			);
 
 			// Renvoyer les offres avec les informations sur les employeurs
-			res.status(200).json(offresWithEmployeurs);
+			res.status(200).json(offresAvecEmployeur);
 		} catch (err) {
 			console.error(err);
 			res.status(500).json("Internal Server Error");
