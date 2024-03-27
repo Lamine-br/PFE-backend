@@ -23,6 +23,10 @@ const emploiSchema = new Schema(
 			type: mongoose.Schema.Types.ObjectId,
 			ref: "Chercheur",
 		},
+		offre: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: "Offre",
+		},
 	},
 	{ timestamps: true }
 );

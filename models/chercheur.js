@@ -39,10 +39,82 @@ const chercheurSchema = new Schema(
 			type: String,
 			required: false,
 		},
+		amis: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Chercheur",
+			},
+		],
+		groupes: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Groupe",
+			},
+		],
 		candidatures: [
 			{
 				type: mongoose.Schema.Types.ObjectId,
 				ref: "Candidature",
+			},
+		],
+		candidatures_spontanees: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "CandidatureSpontanee",
+			},
+		],
+		favoris: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Offre",
+			},
+		],
+		enregistrements: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Offre",
+			},
+		],
+		alertes: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Alerte",
+			},
+		],
+		emplois: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Emploi",
+			},
+		],
+		criteres_notification: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "CritereNotification",
+			},
+		],
+		notifications: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Notification",
+			},
+		],
+		bloques: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Bloque",
+			},
+		],
+		signalements: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Signalement",
+			},
+		],
+		bloques_partage: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "BloquePartage",
 			},
 		],
 	},
