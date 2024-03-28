@@ -4,6 +4,7 @@ const Offre = require("../models/offre");
 const Candidature = require("../models/candidature");
 const Dossier = require("../models/dossier");
 const Chercheur = require("../models/chercheur");
+const Reponse = require("../models/reponse");
 const connectDB = require("../database/connectDB");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
 
@@ -28,6 +29,30 @@ service.get("/employeur/candidatures", verifyAccessToken, async (req, res) => {
 			.populate("chercheur")
 			.exec();
 		return res.status(200).json(candidatures);
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.get("/chercheur/candidatures", async (req, res) => {
+	try {
+		const candidatures = await Candidature.find().populate("offre dossier");
+		return res.status(200).json(candidatures);
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.get("/chercheur/candidatures/:id", async (req, res) => {
+	const id = req.params.id;
+	console.log(id);
+	try {
+		const candidature = await Candidature.findById(id).populate(
+			"offre chercheur dossier"
+		);
+		return res.status(200).json(candidature);
 	} catch (error) {
 		console.log(error);
 		return res.status(500).json({ message: "Internal server error" });
@@ -61,13 +86,7 @@ service.post("/chercheur/candidatures/add", async (req, res) => {
 	const { cv, motivation, commentaire, chercheur, offre } = req.body;
 
 	try {
-		const fulldate = new Date();
-
-		const annee = fulldate.getFullYear();
-		const mois = (fulldate.getMonth() + 1).toString().padStart(2, "0");
-		const jour = fulldate.getDate().toString().padStart(2, "0");
-
-		const date = `${annee}-${mois}-${jour}`;
+		const date_traitement = "";
 		const status = "En attente";
 
 		let dossier = new Dossier({
@@ -81,7 +100,7 @@ service.post("/chercheur/candidatures/add", async (req, res) => {
 
 		const candidature = new Candidature({
 			dossier,
-			date,
+			date_traitement,
 			status,
 			chercheur,
 			offre,
@@ -97,10 +116,132 @@ service.post("/chercheur/candidatures/add", async (req, res) => {
 		chercheurExistant.candidatures.push(savedCandidature._id);
 		await chercheurExistant.save();
 
+		const offreExistante = await Offre.findById(offre);
+		if (!offreExistante) {
+			return res.status(404).json({ message: "Offre introuvable" });
+		}
+
+		offreExistante.candidatures.push(savedCandidature._id);
+		await offreExistante.save();
+
 		console.log("Candidature ajoutée");
 		return res.status(201).json(savedCandidature);
 	} catch (error) {
 		console.error(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.put("/chercheur/candidatures/:id", async (req, res) => {
+	const id = req.params.id;
+	const { cv, motivation, commentaire } = req.body;
+
+	try {
+		const existingCandidature = await Candidature.findById(id);
+
+		if (!existingCandidature) {
+			return res.status(404).json({ message: "Candidature introuvable" });
+		}
+
+		if (!cv && !motivation && !commentaire) {
+			return res
+				.status(400)
+				.json({ message: "Aucune donnée de mise à jour fournie" });
+		}
+
+		if (cv) existingCandidature.cv = cv;
+		if (motivation) existingCandidature.motivation = motivation;
+		if (commentaire) existingCandidature.commentaire = commentaire;
+
+		const updatedCandidature = await existingCandidature.save();
+		console.log("Candidature mise à jour");
+
+		const dossier = await Dossier.findById(existingCandidature.dossier);
+
+		if (!dossier) {
+			return res.status(404).json({ message: "Dossier introuvable" });
+		}
+
+		if (cv) dossier.cv = cv;
+		if (motivation) dossier.motivation = motivation;
+		if (commentaire) dossier.commentaire = commentaire;
+
+		const updatedDossier = await dossier.save();
+		console.log("Dossier mis à jour");
+
+		const candidaturePeuplee = await Candidature.findById(id).populate(
+			"dossier"
+		);
+
+		return res.status(200).json(candidaturePeuplee);
+	} catch (error) {
+		console.error(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.delete("/chercheur/candidatures/:id", async (req, res) => {
+	const { id } = req.params;
+
+	try {
+		const deletedCandidature = await Candidature.findByIdAndDelete(id);
+
+		if (!deletedCandidature) {
+			return res.status(404).json({ message: "Candidature introuvable" });
+		}
+
+		const relatedOffre = await Offre.findById(deletedCandidature.offre);
+
+		if (relatedOffre) {
+			relatedOffre.candidatures.pull(deletedCandidature._id);
+			await relatedOffre.save();
+		}
+
+		const relatedChercheur = await Chercheur.findById(
+			deletedCandidature.chercheur
+		);
+
+		if (relatedChercheur) {
+			relatedChercheur.candidatures.pull(deletedCandidature._id);
+			await relatedChercheur.save();
+		}
+
+		console.log("Candidature supprimée");
+		return res
+			.status(200)
+			.json({ message: "Candidature supprimée avec succès" });
+	} catch (error) {
+		console.error(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.post("/chercheur/candidatures/:id/contact", async (req, res) => {
+	const candidature = req.params.id;
+	const { titre, contenu } = req.body;
+	try {
+		const type_emetteur = "chercheur";
+		const type_destinataire = "employeur";
+		const reponse = new Reponse({
+			type_emetteur,
+			type_destinataire,
+			candidature,
+			titre,
+			contenu,
+		});
+		const reponseEngst = await reponse.save();
+		return res.status(201).json(reponseEngst);
+	} catch (error) {
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.get("/chercheur/candidatures/:id/reponses", async (req, res) => {
+	const id = req.params.id;
+	try {
+		const reponses = await Reponse.find({ candidature: id });
+		return res.status(200).json(reponses);
+	} catch (error) {
 		return res.status(500).json({ message: "Internal server error" });
 	}
 });

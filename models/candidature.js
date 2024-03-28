@@ -7,7 +7,7 @@ const candidatureSchema = new Schema(
 			type: mongoose.Schema.Types.ObjectId,
 			ref: "Dossier",
 		},
-		date: {
+		date_traitement: {
 			type: String,
 			required: false,
 		},
