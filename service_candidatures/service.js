@@ -66,15 +66,18 @@ service.get(
 		const candidatureId = req.params.id;
 		try {
 			const userId = req.decoded.userPayload._id;
-			const candidature = await Candidature.find().populate("offre").findOne({
-				_id: candidatureId,
-				"offre.employeur": userId,
-			});
+			const candidature = await Candidature.findOne({ _id: candidatureId })
+				.populate({
+					path: "offre",
+					match: { employeur: userId },
+				})
+				.populate("dossier chercheur")
+				.exec();
 
 			if (!candidature) {
 				return res.status(404).json({ message: "Offre non trouvée" });
 			}
-			return res.status(200).json(offre);
+			return res.status(200).json(candidature);
 		} catch (error) {
 			console.log(error);
 			return res.status(500).json({ message: "Internal server error" });
