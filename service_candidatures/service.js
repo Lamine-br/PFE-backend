@@ -239,6 +239,26 @@ service.post("/chercheur/candidatures/:id/contact", async (req, res) => {
 	}
 });
 
+service.post("/employeur/candidatures/:id/contact", async (req, res) => {
+	const candidature = req.params.id;
+	const { titre, contenu } = req.body;
+	try {
+		const type_emetteur = "employeur";
+		const type_destinataire = "chercheur";
+		const reponse = new Reponse({
+			type_emetteur,
+			type_destinataire,
+			candidature,
+			titre,
+			contenu,
+		});
+		const reponseEngst = await reponse.save();
+		return res.status(201).json(reponseEngst);
+	} catch (error) {
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
 service.get("/chercheur/candidatures/:id/reponses", async (req, res) => {
 	const id = req.params.id;
 	try {
