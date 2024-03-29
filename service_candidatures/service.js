@@ -269,4 +269,74 @@ service.get("/chercheur/candidatures/:id/reponses", async (req, res) => {
 	}
 });
 
+service.post(
+	"/employeur/candidatures/validate",
+	verifyAccessToken,
+	async (req, res) => {
+		const id_candidature = req.body.id;
+		try {
+			const date = new Date();
+			await Candidature.updateOne(
+				{ _id: id_candidature },
+				{ status: "Validé", date_traitement: date }
+			);
+
+			console.log("Candidature validée");
+			return res.status(201).json("Candidature validée");
+		} catch (error) {
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
+
+service.post(
+	"/employeur/candidatures/refuse",
+	verifyAccessToken,
+	async (req, res) => {
+		const id_candidature = req.body.id;
+		try {
+			const date = new Date();
+			await Candidature.updateOne(
+				{ _id: id_candidature },
+				{ status: "Refusé", date_traitement: date }
+			);
+
+			console.log("Candidature refusée");
+			return res.status(201).json("Candidature refusée");
+		} catch (error) {
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
+
+service.post("/chercheur/candidatures/validate", async (req, res) => {
+	const id_candidature = req.body.id;
+	try {
+		await Candidature.updateOne(
+			{ _id: id_candidature },
+			{ status: "Validé Validé" }
+		);
+
+		console.log("Candidature validée");
+		return res.status(201).json("Candidature validée");
+	} catch (error) {
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.post("/chercheur/candidatures/refuse", async (req, res) => {
+	const id_candidature = req.body.id;
+	try {
+		await Candidature.updateOne(
+			{ _id: id_candidature },
+			{ status: "Validé Refusé" }
+		);
+
+		console.log("Candidature refusée");
+		return res.status(201).json("Candidature refusée");
+	} catch (error) {
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
 service.listen(PORT, () => console.log("Service is running at port " + PORT));
