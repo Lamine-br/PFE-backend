@@ -69,11 +69,58 @@ authRouter.post("/login/employeur", async (req, res) => {
 			return res.status(401).json({ message: "Invalid credentials" });
 		}
 
-		let accessToken = createAccessToken(employeur);
-		let refreshToken = createRefreshToken(employeur);
+		let accessToken = createAccessToken("employeur", {
+			_id: employeur._id,
+			email: employeur.email,
+		});
+		let refreshToken = createRefreshToken("employeur", {
+			_id: employeur._id,
+			email: employeur.email,
+		});
 
 		return res.status(200).json({
 			message: "Employeur successfully logged in",
+			accessToken,
+			refreshToken,
+		});
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+//  Login du chercheur
+authRouter.post("/login/chercheur", async (req, res) => {
+	const { email, password } = req.body;
+
+	if (!email || !password) {
+		return res.status(400).json({ message: "Email or Password missing" });
+	}
+
+	try {
+		const chercheur = await Chercheur.findOne({ email });
+
+		if (!chercheur) {
+			return res.status(401).json({ message: "Invalid credentials" });
+		}
+
+		const isPasswordValid = await bcrypt.compare(password, chercheur.password);
+
+		if (!isPasswordValid) {
+			return res.status(401).json({ message: "Invalid credentials" });
+		}
+
+		let accessToken = createAccessToken("chercheur", {
+			_id: chercheur._id,
+			email: chercheur.email,
+		});
+		let refreshToken = createRefreshToken("chercheur", {
+			_id: chercheur._id,
+			email: chercheur.email,
+		});
+
+		return res.status(200).json({
+			message: "Chercheur successfully logged in",
 			accessToken,
 			refreshToken,
 		});
