@@ -5,6 +5,7 @@ const Candidature = require("../models/candidature");
 const Dossier = require("../models/dossier");
 const Chercheur = require("../models/chercheur");
 const Reponse = require("../models/reponse");
+const Emploi = require("../models/emploi");
 const connectDB = require("../database/connectDB");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
 
@@ -317,8 +318,16 @@ service.post("/chercheur/candidatures/validate", async (req, res) => {
 			{ status: "Validé Validé" }
 		);
 
+		const updatedCandidature = await Candidature.findById(id_candidature);
+
+		const chercheur = updatedCandidature.chercheur;
+		const offre = updatedCandidature.offre;
+
+		const emploi = new Emploi({ chercheur, offre });
+		emploi.save();
+
 		console.log("Candidature validée");
-		return res.status(201).json("Candidature validée");
+		return res.status(201).json(updatedCandidature);
 	} catch (error) {
 		return res.status(500).json({ message: "Internal server error" });
 	}
