@@ -179,13 +179,6 @@ service.put(
 					.json({ message: "Aucune donnée de mise à jour fournie" });
 			}
 
-			if (cv) existingCandidature.cv = cv;
-			if (motivation) existingCandidature.motivation = motivation;
-			if (commentaire) existingCandidature.commentaire = commentaire;
-
-			const updatedCandidature = await existingCandidature.save();
-			console.log("Candidature mise à jour");
-
 			const dossier = await Dossier.findById(existingCandidature.dossier);
 
 			if (!dossier) {
@@ -197,7 +190,7 @@ service.put(
 			if (commentaire) dossier.commentaire = commentaire;
 
 			const updatedDossier = await dossier.save();
-			console.log("Dossier mis à jour");
+			console.log("Candidature mise à jour");
 
 			const candidaturePeuplee = await Candidature.findById(id).populate(
 				"dossier"
@@ -308,6 +301,20 @@ service.post(
 
 service.get(
 	"/chercheur/candidatures/:id/reponses",
+	verifyAccessToken,
+	async (req, res) => {
+		const id = req.params.id;
+		try {
+			const reponses = await Reponse.find({ candidature: id });
+			return res.status(200).json(reponses);
+		} catch (error) {
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
+
+service.get(
+	"/employeur/candidatures/:id/reponses",
 	verifyAccessToken,
 	async (req, res) => {
 		const id = req.params.id;
