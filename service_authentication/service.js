@@ -13,7 +13,6 @@ service.use(express.urlencoded({ extended: true }));
 service.use(express.json());
 
 service.use("/auth", authRouter);
-service.use("/offres", offreRouter);
 
 connectDB();
 
