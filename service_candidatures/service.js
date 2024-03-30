@@ -20,8 +20,8 @@ connectDB();
 
 service.get("/employeur/candidatures", verifyAccessToken, async (req, res) => {
 	try {
-		console.log(req.decoded.userPayload._id);
-		const userId = req.decoded.userPayload._id;
+		console.log(req.decoded.payloadAvecRole._id);
+		const userId = req.decoded.payloadAvecRole._id;
 		const candidatures = await Candidature.find()
 			.populate({
 				path: "offre",
@@ -36,9 +36,13 @@ service.get("/employeur/candidatures", verifyAccessToken, async (req, res) => {
 	}
 });
 
-service.get("/chercheur/candidatures", async (req, res) => {
+service.get("/chercheur/candidatures", verifyAccessToken, async (req, res) => {
 	try {
-		const candidatures = await Candidature.find().populate("offre dossier");
+		console.log(req.decoded);
+		const userId = req.decoded.payloadAvecRole._id;
+		const candidatures = await Candidature.find({ chercheur: userId }).populate(
+			"offre dossier"
+		);
 		return res.status(200).json(candidatures);
 	} catch (error) {
 		console.log(error);
@@ -46,19 +50,28 @@ service.get("/chercheur/candidatures", async (req, res) => {
 	}
 });
 
-service.get("/chercheur/candidatures/:id", async (req, res) => {
-	const id = req.params.id;
-	console.log(id);
-	try {
-		const candidature = await Candidature.findById(id).populate(
-			"offre chercheur dossier"
-		);
-		return res.status(200).json(candidature);
-	} catch (error) {
-		console.log(error);
-		return res.status(500).json({ message: "Internal server error" });
+service.get(
+	"/chercheur/candidatures/:id",
+	verifyAccessToken,
+	async (req, res) => {
+		const id = req.params.id;
+		const userId = req.decoded.payloadAvecRole._id;
+		try {
+			const candidature = await Candidature.findById(id);
+			if (userId !== candidature.chercheur.toString()) {
+				return res.status(403).json("Unauthorized access");
+			}
+
+			await Candidature.populate(candidature, {
+				path: "offre chercheur dossier",
+			});
+			return res.status(200).json(candidature);
+		} catch (error) {
+			console.log(error);
+			return res.status(500).json({ message: "Internal server error" });
+		}
 	}
-});
+);
 
 service.get(
 	"/employeur/candidatures/:id",
@@ -66,7 +79,7 @@ service.get(
 	async (req, res) => {
 		const candidatureId = req.params.id;
 		try {
-			const userId = req.decoded.userPayload._id;
+			const userId = req.decoded.payloadAvecRole._id;
 			const candidature = await Candidature.findOne({ _id: candidatureId })
 				.populate({
 					path: "offre",
@@ -86,189 +99,226 @@ service.get(
 	}
 );
 
-service.post("/chercheur/candidatures/add", async (req, res) => {
-	const { cv, motivation, commentaire, chercheur, offre } = req.body;
+service.post(
+	"/chercheur/candidatures/add",
+	verifyAccessToken,
+	async (req, res) => {
+		const { cv, motivation, commentaire, offre } = req.body;
+		const chercheur = req.decoded.payloadAvecRole._id;
 
-	try {
-		const date_traitement = "";
-		const status = "En attente";
+		try {
+			const date_traitement = "";
+			const status = "En attente";
 
-		let dossier = new Dossier({
-			cv,
-			motivation,
-			commentaire,
-		});
+			let dossier = new Dossier({
+				cv,
+				motivation,
+				commentaire,
+			});
 
-		const savedDossier = await dossier.save();
-		dossier = savedDossier._id;
+			const savedDossier = await dossier.save();
+			dossier = savedDossier._id;
 
-		const candidature = new Candidature({
-			dossier,
-			date_traitement,
-			status,
-			chercheur,
-			offre,
-		});
+			const candidature = new Candidature({
+				dossier,
+				date_traitement,
+				status,
+				chercheur,
+				offre,
+			});
 
-		const savedCandidature = await candidature.save();
+			const savedCandidature = await candidature.save();
 
-		const chercheurExistant = await Chercheur.findById(chercheur);
-		if (!chercheurExistant) {
-			return res.status(404).json({ message: "Chercheur introuvable" });
+			const chercheurExistant = await Chercheur.findById(chercheur);
+			if (!chercheurExistant) {
+				return res.status(404).json({ message: "Chercheur introuvable" });
+			}
+
+			chercheurExistant.candidatures.push(savedCandidature._id);
+			await chercheurExistant.save();
+
+			const offreExistante = await Offre.findById(offre);
+			if (!offreExistante) {
+				return res.status(404).json({ message: "Offre introuvable" });
+			}
+
+			offreExistante.candidatures.push(savedCandidature._id);
+			await offreExistante.save();
+
+			console.log("Candidature ajoutée");
+			return res.status(201).json(savedCandidature);
+		} catch (error) {
+			console.error(error);
+			return res.status(500).json({ message: "Internal server error" });
 		}
-
-		chercheurExistant.candidatures.push(savedCandidature._id);
-		await chercheurExistant.save();
-
-		const offreExistante = await Offre.findById(offre);
-		if (!offreExistante) {
-			return res.status(404).json({ message: "Offre introuvable" });
-		}
-
-		offreExistante.candidatures.push(savedCandidature._id);
-		await offreExistante.save();
-
-		console.log("Candidature ajoutée");
-		return res.status(201).json(savedCandidature);
-	} catch (error) {
-		console.error(error);
-		return res.status(500).json({ message: "Internal server error" });
 	}
-});
+);
 
-service.put("/chercheur/candidatures/:id", async (req, res) => {
-	const id = req.params.id;
-	const { cv, motivation, commentaire } = req.body;
+service.put(
+	"/chercheur/candidatures/:id",
+	verifyAccessToken,
+	async (req, res) => {
+		const id = req.params.id;
+		const { cv, motivation, commentaire } = req.body;
+		const userId = req.decoded.payloadAvecRole._id;
 
-	try {
-		const existingCandidature = await Candidature.findById(id);
+		try {
+			const existingCandidature = await Candidature.findById(id);
 
-		if (!existingCandidature) {
-			return res.status(404).json({ message: "Candidature introuvable" });
+			if (!existingCandidature) {
+				return res.status(404).json({ message: "Candidature introuvable" });
+			}
+
+			if (userId !== existingCandidature.chercheur.toString()) {
+				return res.status(403).json("Unauthorized access");
+			}
+
+			if (!cv && !motivation && !commentaire) {
+				return res
+					.status(400)
+					.json({ message: "Aucune donnée de mise à jour fournie" });
+			}
+
+			if (cv) existingCandidature.cv = cv;
+			if (motivation) existingCandidature.motivation = motivation;
+			if (commentaire) existingCandidature.commentaire = commentaire;
+
+			const updatedCandidature = await existingCandidature.save();
+			console.log("Candidature mise à jour");
+
+			const dossier = await Dossier.findById(existingCandidature.dossier);
+
+			if (!dossier) {
+				return res.status(404).json({ message: "Dossier introuvable" });
+			}
+
+			if (cv) dossier.cv = cv;
+			if (motivation) dossier.motivation = motivation;
+			if (commentaire) dossier.commentaire = commentaire;
+
+			const updatedDossier = await dossier.save();
+			console.log("Dossier mis à jour");
+
+			const candidaturePeuplee = await Candidature.findById(id).populate(
+				"dossier"
+			);
+
+			return res.status(200).json(candidaturePeuplee);
+		} catch (error) {
+			console.error(error);
+			return res.status(500).json({ message: "Internal server error" });
 		}
+	}
+);
 
-		if (!cv && !motivation && !commentaire) {
+service.delete(
+	"/chercheur/candidatures/:id",
+	verifyAccessToken,
+	async (req, res) => {
+		const { id } = req.params;
+		const userId = req.decoded.payloadAvecRole._id;
+
+		try {
+			const candidature = await Candidature.findById(id);
+
+			if (!candidature) {
+				return res.status(404).json({ message: "Candidature introuvable" });
+			}
+
+			if (userId !== candidature.chercheur.toString()) {
+				return res.status(403).json("Unauthorized access");
+			}
+
+			const deletedCandidature = await Candidature.findByIdAndDelete(id);
+
+			const relatedOffre = await Offre.findById(deletedCandidature.offre);
+
+			if (relatedOffre) {
+				relatedOffre.candidatures.pull(deletedCandidature._id);
+				await relatedOffre.save();
+			}
+
+			const relatedChercheur = await Chercheur.findById(
+				deletedCandidature.chercheur
+			);
+
+			if (relatedChercheur) {
+				relatedChercheur.candidatures.pull(deletedCandidature._id);
+				await relatedChercheur.save();
+			}
+
+			console.log("Candidature supprimée");
 			return res
-				.status(400)
-				.json({ message: "Aucune donnée de mise à jour fournie" });
+				.status(200)
+				.json({ message: "Candidature supprimée avec succès" });
+		} catch (error) {
+			console.error(error);
+			return res.status(500).json({ message: "Internal server error" });
 		}
+	}
+);
 
-		if (cv) existingCandidature.cv = cv;
-		if (motivation) existingCandidature.motivation = motivation;
-		if (commentaire) existingCandidature.commentaire = commentaire;
-
-		const updatedCandidature = await existingCandidature.save();
-		console.log("Candidature mise à jour");
-
-		const dossier = await Dossier.findById(existingCandidature.dossier);
-
-		if (!dossier) {
-			return res.status(404).json({ message: "Dossier introuvable" });
+service.post(
+	"/chercheur/candidatures/:id/contact",
+	verifyAccessToken,
+	async (req, res) => {
+		const candidature = req.params.id;
+		const { titre, contenu } = req.body;
+		try {
+			const type_emetteur = "chercheur";
+			const type_destinataire = "employeur";
+			const reponse = new Reponse({
+				type_emetteur,
+				type_destinataire,
+				candidature,
+				titre,
+				contenu,
+			});
+			const reponseEngst = await reponse.save();
+			return res.status(201).json(reponseEngst);
+		} catch (error) {
+			return res.status(500).json({ message: "Internal server error" });
 		}
-
-		if (cv) dossier.cv = cv;
-		if (motivation) dossier.motivation = motivation;
-		if (commentaire) dossier.commentaire = commentaire;
-
-		const updatedDossier = await dossier.save();
-		console.log("Dossier mis à jour");
-
-		const candidaturePeuplee = await Candidature.findById(id).populate(
-			"dossier"
-		);
-
-		return res.status(200).json(candidaturePeuplee);
-	} catch (error) {
-		console.error(error);
-		return res.status(500).json({ message: "Internal server error" });
 	}
-});
+);
 
-service.delete("/chercheur/candidatures/:id", async (req, res) => {
-	const { id } = req.params;
-
-	try {
-		const deletedCandidature = await Candidature.findByIdAndDelete(id);
-
-		if (!deletedCandidature) {
-			return res.status(404).json({ message: "Candidature introuvable" });
+service.post(
+	"/employeur/candidatures/:id/contact",
+	verifyAccessToken,
+	async (req, res) => {
+		const candidature = req.params.id;
+		const { titre, contenu } = req.body;
+		try {
+			const type_emetteur = "employeur";
+			const type_destinataire = "chercheur";
+			const reponse = new Reponse({
+				type_emetteur,
+				type_destinataire,
+				candidature,
+				titre,
+				contenu,
+			});
+			const reponseEngst = await reponse.save();
+			return res.status(201).json(reponseEngst);
+		} catch (error) {
+			return res.status(500).json({ message: "Internal server error" });
 		}
+	}
+);
 
-		const relatedOffre = await Offre.findById(deletedCandidature.offre);
-
-		if (relatedOffre) {
-			relatedOffre.candidatures.pull(deletedCandidature._id);
-			await relatedOffre.save();
+service.get(
+	"/chercheur/candidatures/:id/reponses",
+	verifyAccessToken,
+	async (req, res) => {
+		const id = req.params.id;
+		try {
+			const reponses = await Reponse.find({ candidature: id });
+			return res.status(200).json(reponses);
+		} catch (error) {
+			return res.status(500).json({ message: "Internal server error" });
 		}
-
-		const relatedChercheur = await Chercheur.findById(
-			deletedCandidature.chercheur
-		);
-
-		if (relatedChercheur) {
-			relatedChercheur.candidatures.pull(deletedCandidature._id);
-			await relatedChercheur.save();
-		}
-
-		console.log("Candidature supprimée");
-		return res
-			.status(200)
-			.json({ message: "Candidature supprimée avec succès" });
-	} catch (error) {
-		console.error(error);
-		return res.status(500).json({ message: "Internal server error" });
 	}
-});
-
-service.post("/chercheur/candidatures/:id/contact", async (req, res) => {
-	const candidature = req.params.id;
-	const { titre, contenu } = req.body;
-	try {
-		const type_emetteur = "chercheur";
-		const type_destinataire = "employeur";
-		const reponse = new Reponse({
-			type_emetteur,
-			type_destinataire,
-			candidature,
-			titre,
-			contenu,
-		});
-		const reponseEngst = await reponse.save();
-		return res.status(201).json(reponseEngst);
-	} catch (error) {
-		return res.status(500).json({ message: "Internal server error" });
-	}
-});
-
-service.post("/employeur/candidatures/:id/contact", async (req, res) => {
-	const candidature = req.params.id;
-	const { titre, contenu } = req.body;
-	try {
-		const type_emetteur = "employeur";
-		const type_destinataire = "chercheur";
-		const reponse = new Reponse({
-			type_emetteur,
-			type_destinataire,
-			candidature,
-			titre,
-			contenu,
-		});
-		const reponseEngst = await reponse.save();
-		return res.status(201).json(reponseEngst);
-	} catch (error) {
-		return res.status(500).json({ message: "Internal server error" });
-	}
-});
-
-service.get("/chercheur/candidatures/:id/reponses", async (req, res) => {
-	const id = req.params.id;
-	try {
-		const reponses = await Reponse.find({ candidature: id });
-		return res.status(200).json(reponses);
-	} catch (error) {
-		return res.status(500).json({ message: "Internal server error" });
-	}
-});
+);
 
 service.post(
 	"/employeur/candidatures/validate",
@@ -310,42 +360,50 @@ service.post(
 	}
 );
 
-service.post("/chercheur/candidatures/validate", async (req, res) => {
-	const id_candidature = req.body.id;
-	try {
-		await Candidature.updateOne(
-			{ _id: id_candidature },
-			{ status: "Validé Validé" }
-		);
+service.post(
+	"/chercheur/candidatures/validate",
+	verifyAccessToken,
+	async (req, res) => {
+		const id_candidature = req.body.id;
+		try {
+			await Candidature.updateOne(
+				{ _id: id_candidature },
+				{ status: "Validé Validé" }
+			);
 
-		const updatedCandidature = await Candidature.findById(id_candidature);
+			const updatedCandidature = await Candidature.findById(id_candidature);
 
-		const chercheur = updatedCandidature.chercheur;
-		const offre = updatedCandidature.offre;
+			const chercheur = updatedCandidature.chercheur;
+			const offre = updatedCandidature.offre;
 
-		const emploi = new Emploi({ chercheur, offre });
-		emploi.save();
+			const emploi = new Emploi({ chercheur, offre });
+			emploi.save();
 
-		console.log("Candidature validée");
-		return res.status(201).json(updatedCandidature);
-	} catch (error) {
-		return res.status(500).json({ message: "Internal server error" });
+			console.log("Candidature validée");
+			return res.status(201).json(updatedCandidature);
+		} catch (error) {
+			return res.status(500).json({ message: "Internal server error" });
+		}
 	}
-});
+);
 
-service.post("/chercheur/candidatures/refuse", async (req, res) => {
-	const id_candidature = req.body.id;
-	try {
-		await Candidature.updateOne(
-			{ _id: id_candidature },
-			{ status: "Validé Refusé" }
-		);
+service.post(
+	"/chercheur/candidatures/refuse",
+	verifyAccessToken,
+	async (req, res) => {
+		const id_candidature = req.body.id;
+		try {
+			await Candidature.updateOne(
+				{ _id: id_candidature },
+				{ status: "Validé Refusé" }
+			);
 
-		console.log("Candidature refusée");
-		return res.status(201).json("Candidature refusée");
-	} catch (error) {
-		return res.status(500).json({ message: "Internal server error" });
+			console.log("Candidature refusée");
+			return res.status(201).json("Candidature refusée");
+		} catch (error) {
+			return res.status(500).json({ message: "Internal server error" });
+		}
 	}
-});
+);
 
 service.listen(PORT, () => console.log("Service is running at port " + PORT));
