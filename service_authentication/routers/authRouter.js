@@ -42,11 +42,6 @@ authRouter.get("/login", async (req, res) => {
 
 		return res.status(200).json({
 			message: "User successfully logged in",
-			user: {
-				email: chercheur.email,
-				username: chercheur.nom + " " + chercheur.prenom,
-				image: "",
-			},
 			accessToken,
 			refreshToken,
 		});
@@ -89,6 +84,7 @@ authRouter.post("/login/employeur", async (req, res) => {
 		return res.status(200).json({
 			message: "Employeur successfully logged in",
 			user: {
+				type: "employeur",
 				email: employeur.email,
 				username: employeur.entreprise,
 				image: "",
@@ -134,6 +130,12 @@ authRouter.post("/login/chercheur", async (req, res) => {
 
 		return res.status(200).json({
 			message: "Chercheur successfully logged in",
+			user: {
+				type: "chercheur",
+				email: chercheur.email,
+				username: chercheur.nom + " " + chercheur.prenom,
+				image: "",
+			},
 			accessToken,
 			refreshToken,
 		});
