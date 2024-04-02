@@ -11,6 +11,10 @@ const chercheurSchema = new Schema(
 			type: String,
 			required: true,
 		},
+		image: {
+			type: String,
+			required: true,
+		},
 		nom: {
 			type: String,
 			required: true,

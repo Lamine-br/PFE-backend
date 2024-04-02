@@ -3,14 +3,15 @@ const cors = require("cors");
 require("dotenv").config();
 const connectDB = require("../database/connectDB");
 const authRouter = require("./routers/authRouter");
-const offreRouter = require("./routers/offreRouter");
 
 const service = express();
 const PORT = 3000;
 
 service.use(cors({ origin: "*" }));
-service.use(express.urlencoded({ extended: true }));
-service.use(express.json());
+service.use(express.urlencoded({ extended: true, limit: "50mb" }));
+service.use(express.json({ limit: "50mb" }));
+
+service.use(express.static("uploads"));
 
 service.use("/auth", authRouter);
 

@@ -5,6 +5,8 @@ const { mailer } = require("../utils/mailer");
 const {
 	generateConfirmationCode,
 } = require("../utils/generateConfirmationCode");
+const fs = require("fs");
+const path = require("path");
 const bcrypt = require("bcrypt");
 const Chercheur = require("../../models/chercheur");
 const Employeur = require("../../models/employeur");
@@ -13,6 +15,7 @@ const ConfirmationCode = require("../../models/confirmationCode");
 const Reponse = require("../../models/reponse");
 const { employeurController } = require("../controllers/employeurController");
 const authRouter = express.Router();
+const { upload } = require("../utils/uploadFile");
 
 authRouter.get("/login", async (req, res) => {
 	const { email, password } = req.body;
@@ -130,7 +133,18 @@ authRouter.post("/login/chercheur", async (req, res) => {
 	}
 });
 
-authRouter.post("/auth/code", async (req, res) => {
+authRouter.post("/upload", upload.single("image"), (req, res) => {
+	const file = req.file;
+	if (!file) {
+		return res.status(400).json("No file uploaded.");
+	}
+
+	// Obtenez le chemin du fichier temporaire
+	const tempFilePath = file.path;
+	return res.status(200).json(tempFilePath);
+});
+
+authRouter.post("/code", async (req, res) => {
 	const { email } = req.body;
 
 	const code = generateConfirmationCode();
@@ -248,6 +262,7 @@ authRouter.post("/register/chercheur", async (req, res) => {
 	const {
 		email,
 		password,
+		image,
 		nom,
 		prenom,
 		date_naissance,
@@ -267,6 +282,7 @@ authRouter.post("/register/chercheur", async (req, res) => {
 		const chercheur = new Chercheur({
 			email,
 			password: hashedPassword,
+			image,
 			nom,
 			prenom,
 			date_naissance,
