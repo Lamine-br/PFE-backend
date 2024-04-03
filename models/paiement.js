@@ -3,10 +3,6 @@ const Schema = mongoose.Schema;
 
 const paiementSchema = new Schema(
 	{
-		date: {
-			type: String,
-			required: false,
-		},
 		type: {
 			type: String,
 			required: false,
