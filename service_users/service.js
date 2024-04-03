@@ -23,6 +23,7 @@ service.get("/profile", verifyAccessToken, async (req, res) => {
 		case "employeur":
 			try {
 				const employeur = await Employeur.findById(userId).populate("contacts");
+
 				if (!employeur) {
 					return res.status(404).json("Employeur non trouvé");
 				}

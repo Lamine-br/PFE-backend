@@ -106,11 +106,11 @@ const employeurSchema = new Schema(
 		abonnement: {
 			debut: { type: String, required: false },
 			fin: { type: String, required: false },
-			abonnement_id: {
+			abonnement: {
 				type: mongoose.Schema.Types.ObjectId,
 				ref: "Abonnement",
 			},
-			paiement_id: {
+			paiement: {
 				type: mongoose.Schema.Types.ObjectId,
 				ref: "Paiement",
 			},

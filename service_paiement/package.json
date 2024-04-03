@@ -11,6 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^5.1.1",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "moment": "^2.30.1",
+    "node-cron": "^3.0.3"
   }
 }

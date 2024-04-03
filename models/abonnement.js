@@ -8,7 +8,7 @@ const abonnementSchema = new Schema(
 			required: false,
 		},
 		duree: {
-			type: String,
+			type: Number,
 			required: false,
 		},
 		prix: {
