@@ -27,6 +27,13 @@ const notificationSchema = new Schema(
 			type: String,
 			required: false,
 		},
+		type_recepteur: {
+			type: String,
+			required: false,
+		},
+		recepteur: {
+			type: mongoose.Schema.Types.ObjectId,
+		},
 	},
 	{ timestamps: true }
 );

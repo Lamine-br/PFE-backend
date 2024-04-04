@@ -18,7 +18,7 @@ const metierSchema = new Schema(
 		offres: [
 			{
 				type: mongoose.Schema.Types.ObjectId,
-				ref: "offres",
+				ref: "Offre",
 			},
 		],
 	},
