@@ -3,6 +3,7 @@ const cors = require("cors");
 const Offre = require("../models/offre");
 const Metier = require("../models/metier");
 const Employeur = require("../models/employeur");
+const Chercheur = require("../models/chercheur");
 const connectDB = require("../database/connectDB");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
 
@@ -187,6 +188,63 @@ service.delete("/employeur/offres/:id", verifyAccessToken, async (req, res) => {
 		return res.status(500).json({ message: "Internal server error" });
 	}
 });
+
+service.post("/chercheur/offres/save", verifyAccessToken, async (req, res) => {
+	const id = req.body.id;
+	const id_chercheur = req.decoded.payloadAvecRole._id;
+
+	try {
+		const chercheur = await Chercheur.findById(id_chercheur);
+		if (id) {
+			const index = chercheur.enregistrements.indexOf(id);
+
+			if (index === -1) {
+				// Enregistrer l'offre si elle n'est pas déja enregistrée
+				chercheur.enregistrements.push(id);
+				await chercheur.save();
+				return res.status(200).json({
+					message: "Offre enregistrée",
+					enregistrements: chercheur.enregistrements,
+				});
+			} else {
+				// Retirer l'offre des enregistrements sinon
+				chercheur.enregistrements.splice(index, 1);
+				await chercheur.save();
+				return res.status(200).json({
+					message: "Offre retirée des enregistrements",
+					enregistrements: chercheur.enregistrements,
+				});
+			}
+		} else {
+			return res.status(400).json("Aucune offre à enregistrer");
+		}
+	} catch (error) {
+		return res.status(500).json({
+			message: "Internal server error",
+		});
+	}
+});
+
+service.get(
+	"/chercheur/enregistrements",
+	verifyAccessToken,
+	async (req, res) => {
+		const id_chercheur = req.decoded.payloadAvecRole._id;
+
+		try {
+			const chercheur = await Chercheur.findById(id_chercheur).populate({
+				path: "enregistrements",
+				populate: { path: "employeur" },
+			});
+			const enregistrements = chercheur.enregistrements;
+			return res.status(200).json(enregistrements);
+		} catch (error) {
+			return res.status(500).json({
+				message: "Internal server error",
+			});
+		}
+	}
+);
 
 service.post("/metiers/add", async (req, res) => {
 	const { nom, description, secteur } = req.body;

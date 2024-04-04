@@ -135,6 +135,7 @@ authRouter.post("/login/chercheur", async (req, res) => {
 				email: chercheur.email,
 				username: chercheur.nom + " " + chercheur.prenom,
 				image: "",
+				enregistrements: chercheur.enregistrements,
 			},
 			accessToken,
 			refreshToken,
