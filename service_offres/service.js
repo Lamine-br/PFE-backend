@@ -4,6 +4,7 @@ const Offre = require("../models/offre");
 const Metier = require("../models/metier");
 const Employeur = require("../models/employeur");
 const Chercheur = require("../models/chercheur");
+const Categorie = require("../models/categorie");
 const connectDB = require("../database/connectDB");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
 
@@ -19,7 +20,7 @@ connectDB();
 service.get("/employeur/offres/:id", verifyAccessToken, async (req, res) => {
 	const offreId = req.params.id;
 	try {
-		const userId = req.decoded.userPayload._id;
+		const userId = req.decoded.payloadAvecRole._id;
 		const offre = await Offre.findOne({
 			_id: offreId,
 			employeur: userId,
@@ -37,8 +38,8 @@ service.get("/employeur/offres/:id", verifyAccessToken, async (req, res) => {
 
 service.get("/employeur/offres", verifyAccessToken, async (req, res) => {
 	try {
-		console.log(req.decoded.userPayload._id);
-		const userId = req.decoded.userPayload._id;
+		console.log(req.decoded.payloadAvecRole._id);
+		const userId = req.decoded.payloadAvecRole._id;
 		const offres = await Offre.find({ employeur: userId }).populate("metier");
 		return res.status(200).json(offres);
 	} catch (error) {
@@ -76,7 +77,7 @@ service.get("/offres/:id", async (req, res) => {
 
 service.post("/employeur/offres/add", verifyAccessToken, async (req, res) => {
 	const { titre, metier, description, debut, fin, remuneration } = req.body;
-	const employeur = req.decoded.userPayload._id;
+	const employeur = req.decoded.payloadAvecRole._id;
 
 	try {
 		const fulldate = new Date();
@@ -120,7 +121,7 @@ service.post("/employeur/offres/add", verifyAccessToken, async (req, res) => {
 
 service.put("/employeur/offres/:id", verifyAccessToken, async (req, res) => {
 	const { titre, metier, description, debut, fin, remuneration } = req.body;
-	const employeur = req.decoded.userPayload._id;
+	const employeur = req.decoded.payloadAvecRole._id;
 	const id_offre = req.params.id;
 
 	try {
@@ -246,6 +247,8 @@ service.get(
 	}
 );
 
+// ---------------------------- Gestion des métiers ----------------------------//
+
 service.post("/metiers/add", async (req, res) => {
 	const { nom, description, secteur } = req.body;
 
@@ -331,5 +334,135 @@ service.delete("/metiers/:id", async (req, res) => {
 		return res.status(500).json({ message: "Internal server error" });
 	}
 });
+
+// ---------------------------- Gestion des catégories ----------------------------//
+
+service.post(
+	"/employeur/categories/add",
+	verifyAccessToken,
+	async (req, res) => {
+		const { nom, description } = req.body;
+		const employeur = req.decoded.payloadAvecRole._id;
+
+		try {
+			const categorie = new Categorie({
+				nom,
+				description,
+				employeur,
+			});
+
+			const categorieErgst = await categorie.save();
+
+			console.log("Catégorie ajoutée");
+			return res.status(201).json(categorieErgst);
+		} catch (error) {
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
+
+service.get("/employeur/categories", verifyAccessToken, async (req, res) => {
+	const employeur = req.decoded.payloadAvecRole._id;
+	try {
+		const categories = await Categorie.find({ employeur: employeur });
+		return res.status(200).json(categories);
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.get(
+	"/employeur/categories/:id",
+	verifyAccessToken,
+	async (req, res) => {
+		const id = req.params.id;
+		const employeur = req.decoded.payloadAvecRole._id;
+		try {
+			const categorie = await Categorie.findOne({
+				_id: id,
+				employeur: employeur,
+			});
+			return res.status(200).json(categorie);
+		} catch (error) {
+			console.log(error);
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
+
+service.delete(
+	"/employeur/categories/:id",
+	verifyAccessToken,
+	async (req, res) => {
+		const id = req.params.id;
+		const employeur = req.decoded.payloadAvecRole._id;
+		try {
+			const result = await Categorie.deleteOne({
+				_id: id,
+				employeur: employeur,
+			});
+
+			if (result.deletedCount === 0) {
+				return res.status(404).json({ message: "Catégorie non trouvée" });
+			}
+
+			const offres = await Offre.find({ categorie: id });
+			for (const offre of offres) {
+				offre.categorie = undefined;
+				await offre.save();
+			}
+
+			return res
+				.status(200)
+				.json({ message: "Catégorie supprimée avec succès" });
+		} catch (error) {
+			console.log(error);
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
+
+service.post(
+	"/employeur/categories/:id",
+	verifyAccessToken,
+	async (req, res) => {
+		const id = req.params.id;
+		const idOffre = req.body.id;
+		const employeur = req.decoded.payloadAvecRole._id;
+		try {
+			if (id !== "0" && id) {
+				// Ajout de l'offre dans la catégorie
+				const nouvelleCategorie = await Categorie.findOne({
+					_id: id,
+					employeur: employeur,
+				});
+				nouvelleCategorie.offres.push(idOffre);
+				await nouvelleCategorie.save();
+
+				let offre = await Offre.findById(idOffre);
+				let ancienneCategorie = await Categorie.findById(offre.categorie);
+				ancienneCategorie.offres.pull(idOffre);
+				await ancienneCategorie.save();
+
+				offre.categorie = id;
+				await offre.save();
+			} else {
+				let offre = await Offre.findById(idOffre);
+				let ancienneCategorie = await Categorie.findById(offre.categorie);
+				ancienneCategorie.offres.pull(idOffre);
+				await ancienneCategorie.save();
+
+				offre.categorie = undefined;
+				await offre.save();
+			}
+
+			return res.status(200).json("Mise à jour effectué avec succès");
+		} catch (error) {
+			console.log(error);
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
 
 service.listen(PORT, () => console.log("Service is running at port " + PORT));

@@ -7,6 +7,10 @@ const categorieSchema = new Schema(
 			type: String,
 			required: false,
 		},
+		description: {
+			type: String,
+			required: false,
+		},
 		employeur: {
 			type: mongoose.Schema.Types.ObjectId,
 			ref: "Employeur",
