@@ -7,6 +7,7 @@ const Chercheur = require("../models/chercheur");
 const Reponse = require("../models/reponse");
 const Emploi = require("../models/emploi");
 const Notification = require("../models/notification");
+const Probleme = require("../models/probleme");
 const connectDB = require("../database/connectDB");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
 const moment = require("moment");
@@ -476,6 +477,29 @@ service.post(
 
 			console.log("Candidature supprimée");
 			return res.status(200).json(updatedCandidature);
+		} catch (error) {
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
+
+service.post(
+	"/chercheur/candidatures/declareProblem",
+	verifyAccessToken,
+	async (req, res) => {
+		const { candidature, titre, contenu } = req.body;
+		const chercheur = req.decoded.payloadAvecRole._id;
+		try {
+			const probleme = new Probleme({
+				titre,
+				contenu,
+				candidature,
+				chercheur,
+			});
+			const problemeEngst = await probleme.save();
+
+			console.log("Problème enregistrée");
+			return res.status(200).json(problemeEngst);
 		} catch (error) {
 			return res.status(500).json({ message: "Internal server error" });
 		}
