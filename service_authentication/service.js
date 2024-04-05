@@ -11,7 +11,7 @@ service.use(cors({ origin: "*" }));
 service.use(express.urlencoded({ extended: true, limit: "50mb" }));
 service.use(express.json({ limit: "50mb" }));
 
-service.use(express.static("uploads"));
+service.use(express.static("public"));
 
 service.use("/auth", authRouter);
 

@@ -134,7 +134,7 @@ authRouter.post("/login/chercheur", async (req, res) => {
 				type: "chercheur",
 				email: chercheur.email,
 				username: chercheur.nom + " " + chercheur.prenom,
-				image: "",
+				image: chercheur.image,
 				enregistrements: chercheur.enregistrements,
 			},
 			accessToken,
@@ -153,8 +153,12 @@ authRouter.post("/upload", upload.single("image"), (req, res) => {
 	}
 
 	// Obtenez le chemin du fichier temporaire
-	const tempFilePath = file.path;
-	return res.status(200).json(tempFilePath);
+	const tempFilePath = file.path.replace(/\\/g, "/");
+	const filePathWithoutPublic = tempFilePath.substring(
+		tempFilePath.indexOf("/public") + "/public".length
+	);
+
+	return res.status(200).json(filePathWithoutPublic);
 });
 
 authRouter.post("/code", async (req, res) => {
