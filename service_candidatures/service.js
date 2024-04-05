@@ -270,7 +270,7 @@ service.post(
 				contenu,
 			});
 			const reponseEngst = await reponse.save();
-			return res.status(201).json(reponseEngst);
+			return res.status(200).json(reponseEngst);
 		} catch (error) {
 			return res.status(500).json({ message: "Internal server error" });
 		}
@@ -309,7 +309,7 @@ service.post(
 			});
 			await notification.save();
 
-			return res.status(201).json(reponseEngst);
+			return res.status(200).json(reponseEngst);
 		} catch (error) {
 			return res.status(500).json({ message: "Internal server error" });
 		}
@@ -372,7 +372,7 @@ service.post(
 			await notification.save();
 
 			console.log("Candidature validée");
-			return res.status(201).json("Candidature validée");
+			return res.status(200).json("Candidature validée");
 		} catch (error) {
 			return res.status(500).json({ message: "Internal server error" });
 		}
@@ -407,7 +407,7 @@ service.post(
 			await notification.save();
 
 			console.log("Candidature refusée");
-			return res.status(201).json("Candidature refusée");
+			return res.status(200).json("Candidature refusée");
 		} catch (error) {
 			return res.status(500).json({ message: "Internal server error" });
 		}
@@ -435,7 +435,7 @@ service.post(
 			emploi.save();
 
 			console.log("Candidature validée");
-			return res.status(201).json(updatedCandidature);
+			return res.status(200).json(updatedCandidature);
 		} catch (error) {
 			return res.status(500).json({ message: "Internal server error" });
 		}
@@ -454,7 +454,28 @@ service.post(
 			);
 
 			console.log("Candidature refusée");
-			return res.status(201).json("Candidature refusée");
+			return res.status(200).json("Candidature refusée");
+		} catch (error) {
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
+
+service.post(
+	"/chercheur/candidatures/delete",
+	verifyAccessToken,
+	async (req, res) => {
+		const id_candidature = req.body.id;
+		try {
+			await Candidature.updateOne(
+				{ _id: id_candidature },
+				{ status: "Supprimé" }
+			);
+
+			const updatedCandidature = await Candidature.findById(id_candidature);
+
+			console.log("Candidature supprimée");
+			return res.status(200).json(updatedCandidature);
 		} catch (error) {
 			return res.status(500).json({ message: "Internal server error" });
 		}
