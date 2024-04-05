@@ -6,8 +6,10 @@ const Dossier = require("../models/dossier");
 const Chercheur = require("../models/chercheur");
 const Reponse = require("../models/reponse");
 const Emploi = require("../models/emploi");
+const Notification = require("../models/notification");
 const connectDB = require("../database/connectDB");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
+const moment = require("moment");
 
 const service = express();
 const PORT = 3000;
@@ -292,6 +294,21 @@ service.post(
 				contenu,
 			});
 			const reponseEngst = await reponse.save();
+
+			// Notifier le chercheur du message
+			const candidatureErgt = await Candidature.findById(candidature);
+			let notification = new Notification({
+				type: "Message",
+				contenu: "Un employeur vous a contacté",
+				lien: "/chercheur/candidatures/" + candidature,
+				date_creation: moment().format("YYYY-MM-DD"),
+				date_lecture: "",
+				statut: "non lu",
+				type_recepteur: "chercheur",
+				recepteur: candidatureErgt.chercheur,
+			});
+			await notification.save();
+
 			return res.status(201).json(reponseEngst);
 		} catch (error) {
 			return res.status(500).json({ message: "Internal server error" });
@@ -333,11 +350,26 @@ service.post(
 	async (req, res) => {
 		const id_candidature = req.body.id;
 		try {
-			const date = new Date();
+			const date = moment().format("YYYY-MM-DD");
 			await Candidature.updateOne(
 				{ _id: id_candidature },
 				{ status: "Validé", date_traitement: date }
 			);
+
+			const candidature = await Candidature.findById(id_candidature);
+
+			// Notifier le chercheur de la validation de sa candidature
+			let notification = new Notification({
+				type: "Candidature acceptée",
+				contenu: "Votre candidature est acceptée",
+				lien: "/chercheur/candidatures/" + id_candidature,
+				date_creation: moment().format("YYYY-MM-DD"),
+				date_lecture: "",
+				statut: "non lu",
+				type_recepteur: "chercheur",
+				recepteur: candidature.chercheur,
+			});
+			await notification.save();
 
 			console.log("Candidature validée");
 			return res.status(201).json("Candidature validée");
@@ -353,11 +385,26 @@ service.post(
 	async (req, res) => {
 		const id_candidature = req.body.id;
 		try {
-			const date = new Date();
+			const date = moment().format("YYYY-MM-DD");
 			await Candidature.updateOne(
 				{ _id: id_candidature },
 				{ status: "Refusé", date_traitement: date }
 			);
+
+			const candidature = await Candidature.findById(id_candidature);
+
+			// Notifier le chercheur du refus de sa candidature
+			let notification = new Notification({
+				type: "Candidature refusée",
+				contenu: "Votre candidature est refusée",
+				lien: "/chercheur/candidatures/" + id_candidature,
+				date_creation: moment().format("YYYY-MM-DD"),
+				date_lecture: "",
+				statut: "non lu",
+				type_recepteur: "chercheur",
+				recepteur: candidature.chercheur,
+			});
+			await notification.save();
 
 			console.log("Candidature refusée");
 			return res.status(201).json("Candidature refusée");
@@ -380,6 +427,7 @@ service.post(
 
 			const updatedCandidature = await Candidature.findById(id_candidature);
 
+			// Création de l'emploi pour le chercheur
 			const chercheur = updatedCandidature.chercheur;
 			const offre = updatedCandidature.offre;
 
