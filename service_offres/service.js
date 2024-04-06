@@ -442,8 +442,10 @@ service.post(
 
 				let offre = await Offre.findById(idOffre);
 				let ancienneCategorie = await Categorie.findById(offre.categorie);
-				ancienneCategorie.offres.pull(idOffre);
-				await ancienneCategorie.save();
+				if (ancienneCategorie) {
+					ancienneCategorie.offres.pull(idOffre);
+					await ancienneCategorie.save();
+				}
 
 				offre.categorie = id;
 				await offre.save();
