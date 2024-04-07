@@ -2,12 +2,9 @@ const express = require("express");
 const service = express();
 const ServiceRegistry = require("./lib/ServiceRegistry");
 
-const PORT = 3000;
-const connectDB = require("../database/connectDB");
+const PORT = 3001;
 
 const serviceRegisrty = new ServiceRegistry();
-
-connectDB();
 
 // This microservice will register the services available
 service.put(
