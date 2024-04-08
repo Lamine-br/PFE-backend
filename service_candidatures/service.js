@@ -11,9 +11,10 @@ const Probleme = require("../models/probleme");
 const connectDB = require("../database/connectDB");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
 const moment = require("moment");
+const axios = require("axios");
 
 const service = express();
-const PORT = 3000;
+const PORT = 3004;
 
 service.use(cors({ origin: "*" }));
 service.use(express.urlencoded({ extended: true }));
@@ -21,7 +22,26 @@ service.use(express.json());
 
 connectDB();
 
-service.get("/employeur/candidatures", verifyAccessToken, async (req, res) => {
+// Affichage des requetes recues
+service.use((req, res, next) => {
+	console.log(`Request received: ${req.method} ${req.url}`);
+	next();
+});
+
+// Fonction d'enregistrement dans le service registry
+const registerService = async (serviceName, serviceVersion, servicePort) => {
+	try {
+		const response = await axios.put(
+			`http://localhost:3001/register/${serviceName}/${serviceVersion}/${servicePort}`
+		);
+		console.log(response.data); // Log the response from the registry service
+	} catch (error) {
+		console.error("Error registering service:", error);
+	}
+};
+registerService("candidatures", "v1", PORT);
+
+service.get("/candidatures/employeur", verifyAccessToken, async (req, res) => {
 	try {
 		console.log(req.decoded.payloadAvecRole._id);
 		const userId = req.decoded.payloadAvecRole._id;
@@ -39,7 +59,7 @@ service.get("/employeur/candidatures", verifyAccessToken, async (req, res) => {
 	}
 });
 
-service.get("/chercheur/candidatures", verifyAccessToken, async (req, res) => {
+service.get("/candidatures/chercheur", verifyAccessToken, async (req, res) => {
 	try {
 		console.log(req.decoded);
 		const userId = req.decoded.payloadAvecRole._id;
@@ -54,7 +74,7 @@ service.get("/chercheur/candidatures", verifyAccessToken, async (req, res) => {
 });
 
 service.get(
-	"/chercheur/candidatures/:id",
+	"/candidatures/chercheur/:id",
 	verifyAccessToken,
 	async (req, res) => {
 		const id = req.params.id;
@@ -77,7 +97,7 @@ service.get(
 );
 
 service.get(
-	"/employeur/candidatures/:id",
+	"/candidatures/employeur/:id",
 	verifyAccessToken,
 	async (req, res) => {
 		const candidatureId = req.params.id;
@@ -103,7 +123,7 @@ service.get(
 );
 
 service.post(
-	"/chercheur/candidatures/add",
+	"/candidatures/chercheur/add",
 	verifyAccessToken,
 	async (req, res) => {
 		const { cv, motivation, commentaire, offre } = req.body;
@@ -158,7 +178,7 @@ service.post(
 );
 
 service.put(
-	"/chercheur/candidatures/:id",
+	"/candidatures/chercheur/:id",
 	verifyAccessToken,
 	async (req, res) => {
 		const id = req.params.id;
@@ -208,7 +228,7 @@ service.put(
 );
 
 service.delete(
-	"/chercheur/candidatures/:id",
+	"/candidatures/chercheur/:id",
 	verifyAccessToken,
 	async (req, res) => {
 		const { id } = req.params;
@@ -255,7 +275,7 @@ service.delete(
 );
 
 service.post(
-	"/chercheur/candidatures/:id/contact",
+	"/candidatures/chercheur/:id/contact",
 	verifyAccessToken,
 	async (req, res) => {
 		const candidature = req.params.id;
@@ -279,7 +299,7 @@ service.post(
 );
 
 service.post(
-	"/employeur/candidatures/:id/contact",
+	"/candidatures/employeur/:id/contact",
 	verifyAccessToken,
 	async (req, res) => {
 		const candidature = req.params.id;
@@ -318,7 +338,7 @@ service.post(
 );
 
 service.get(
-	"/chercheur/candidatures/:id/reponses",
+	"/candidatures/chercheur/:id/reponses",
 	verifyAccessToken,
 	async (req, res) => {
 		const id = req.params.id;
@@ -332,7 +352,7 @@ service.get(
 );
 
 service.get(
-	"/employeur/candidatures/:id/reponses",
+	"/candidatures/employeur/:id/reponses",
 	verifyAccessToken,
 	async (req, res) => {
 		const id = req.params.id;
@@ -346,7 +366,7 @@ service.get(
 );
 
 service.post(
-	"/employeur/candidatures/validate",
+	"/candidatures/employeur/validate",
 	verifyAccessToken,
 	async (req, res) => {
 		const id_candidature = req.body.id;
@@ -381,7 +401,7 @@ service.post(
 );
 
 service.post(
-	"/employeur/candidatures/refuse",
+	"/candidatures/employeur/refuse",
 	verifyAccessToken,
 	async (req, res) => {
 		const id_candidature = req.body.id;
@@ -416,7 +436,7 @@ service.post(
 );
 
 service.post(
-	"/chercheur/candidatures/validate",
+	"/candidatures/chercheur/validate",
 	verifyAccessToken,
 	async (req, res) => {
 		const id_candidature = req.body.id;
@@ -444,7 +464,7 @@ service.post(
 );
 
 service.post(
-	"/chercheur/candidatures/refuse",
+	"/candidatures/chercheur/refuse",
 	verifyAccessToken,
 	async (req, res) => {
 		const id_candidature = req.body.id;
@@ -463,7 +483,7 @@ service.post(
 );
 
 service.post(
-	"/chercheur/candidatures/delete",
+	"/candidatures/chercheur/delete",
 	verifyAccessToken,
 	async (req, res) => {
 		const id_candidature = req.body.id;
@@ -484,7 +504,7 @@ service.post(
 );
 
 service.post(
-	"/chercheur/candidatures/declareProblem",
+	"/candidatures/chercheur/declareProblem",
 	verifyAccessToken,
 	async (req, res) => {
 		const { candidature, titre, contenu } = req.body;

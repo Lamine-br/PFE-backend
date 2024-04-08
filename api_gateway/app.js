@@ -17,11 +17,10 @@ app.use((req, res, next) => {
 async function fetchServiceUrlFromRegistry(servicename, serviceversion) {
 	try {
 		const response = await axios.get(
-			`http://localhost:3003/find/${servicename}/${serviceversion}`
+			`http://localhost:3001/find/${servicename}/${serviceversion}`
 		);
 		return response.data; // Assuming the response is a single service URL
 	} catch (error) {
-		console.error("Error fetching service URL from registry:", error);
 		return null;
 	}
 }
@@ -30,6 +29,12 @@ async function fetchServiceUrlFromRegistry(servicename, serviceversion) {
 const services = [
 	{ name: "auth", version: "v1", path: "/auth" },
 	{ name: "offres", version: "v1", path: "/offres" },
+	{ name: "candidatures", version: "v1", path: "/candidatures" },
+	{ name: "emplois", version: "v1", path: "/emplois" },
+	{ name: "users", version: "v1", path: "/users" },
+	{ name: "notifications", version: "v1", path: "/notifications" },
+	{ name: "abonnements", version: "v1", path: "/abonnements" },
+	{ name: "paiements", version: "v1", path: "/paiements" },
 	// Add more services as needed
 ];
 
@@ -48,7 +53,7 @@ services.forEach(async (service) => {
 		console.log(`Service ${service.name} URL:`, serviceUrl);
 		app.use(service.path, serviceProxy);
 	} else {
-		console.error(`Service ${service.name} not found in registry.`);
+		console.log(`Service ${service.name} not found in registry.`);
 	}
 });
 

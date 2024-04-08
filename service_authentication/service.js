@@ -1,12 +1,12 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const connectDB = require("./database/connectDB");
+const connectDB = require("../database/connectDB");
 const authRouter = require("./routers/authRouter");
 const axios = require("axios");
 
 const service = express();
-const PORT = 3001;
+const PORT = 3002;
 
 service.use(cors({ origin: "*" }));
 service.use(express.urlencoded({ extended: true, limit: "50mb" }));
@@ -26,7 +26,7 @@ service.use((req, res, next) => {
 const registerService = async (serviceName, serviceVersion, servicePort) => {
 	try {
 		const response = await axios.put(
-			`http://localhost:3003/register/${serviceName}/${serviceVersion}/${servicePort}`
+			`http://localhost:3001/register/${serviceName}/${serviceVersion}/${servicePort}`
 		);
 		console.log(response.data); // Log the response from the registry service
 	} catch (error) {

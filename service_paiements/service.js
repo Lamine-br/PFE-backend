@@ -7,15 +7,35 @@ const connectDB = require("../database/connectDB");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
 const moment = require("moment");
 const cron = require("node-cron");
+const axios = require("axios");
 
 connectDB();
 
 const service = express();
-const PORT = 3000;
+const PORT = 3009;
 
 service.use(cors({ origin: "*" }));
 service.use(express.urlencoded({ extended: true }));
 service.use(express.json());
+
+// Affichage des requetes recues
+service.use((req, res, next) => {
+	console.log(`Request received: ${req.method} ${req.url}`);
+	next();
+});
+
+// Fonction d'enregistrement dans le service registry
+const registerService = async (serviceName, serviceVersion, servicePort) => {
+	try {
+		const response = await axios.put(
+			`http://localhost:3001/register/${serviceName}/${serviceVersion}/${servicePort}`
+		);
+		console.log(response.data); // Log the response from the registry service
+	} catch (error) {
+		console.error("Error registering service:", error);
+	}
+};
+registerService("paiements", "v1", PORT);
 
 service.post("/paiements/add", verifyAccessToken, async (req, res) => {
 	const { abonnement, type } = req.body;

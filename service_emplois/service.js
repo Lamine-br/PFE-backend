@@ -8,9 +8,10 @@ const Reponse = require("../models/reponse");
 const Emploi = require("../models/emploi");
 const connectDB = require("../database/connectDB");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
+const axios = require("axios");
 
 const service = express();
-const PORT = 3000;
+const PORT = 3005;
 
 service.use(cors({ origin: "*" }));
 service.use(express.urlencoded({ extended: true }));
@@ -18,7 +19,26 @@ service.use(express.json());
 
 connectDB();
 
-service.get("/chercheur/emplois", async (req, res) => {
+// Affichage des requetes recues
+service.use((req, res, next) => {
+	console.log(`Request received: ${req.method} ${req.url}`);
+	next();
+});
+
+// Fonction d'enregistrement dans le service registry
+const registerService = async (serviceName, serviceVersion, servicePort) => {
+	try {
+		const response = await axios.put(
+			`http://localhost:3001/register/${serviceName}/${serviceVersion}/${servicePort}`
+		);
+		console.log(response.data); // Log the response from the registry service
+	} catch (error) {
+		console.error("Error registering service:", error);
+	}
+};
+registerService("emplois", "v1", PORT);
+
+service.get("/emplois/chercheur", async (req, res) => {
 	try {
 		const emplois = await Emploi.find().populate("offre");
 
@@ -29,7 +49,7 @@ service.get("/chercheur/emplois", async (req, res) => {
 	}
 });
 
-service.get("/chercheur/emplois/:id", async (req, res) => {
+service.get("/emplois/chercheur/:id", async (req, res) => {
 	try {
 		const id = req.params.id;
 		const emploi = await Emploi.findById(id).populate("offre");

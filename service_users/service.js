@@ -6,17 +6,37 @@ const Chercheur = require("../models/chercheur");
 const connectDB = require("../database/connectDB");
 const bcrypt = require("bcrypt");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
+const axios = require("axios");
 
 connectDB();
 
 const service = express();
-const PORT = 3000;
+const PORT = 3006;
 
 service.use(cors({ origin: "*" }));
 service.use(express.urlencoded({ extended: true }));
 service.use(express.json());
 
-service.get("/profile", verifyAccessToken, async (req, res) => {
+// Affichage des requetes recues
+service.use((req, res, next) => {
+	console.log(`Request received: ${req.method} ${req.url}`);
+	next();
+});
+
+// Fonction d'enregistrement dans le service registry
+const registerService = async (serviceName, serviceVersion, servicePort) => {
+	try {
+		const response = await axios.put(
+			`http://localhost:3001/register/${serviceName}/${serviceVersion}/${servicePort}`
+		);
+		console.log(response.data); // Log the response from the registry service
+	} catch (error) {
+		console.error("Error registering service:", error);
+	}
+};
+registerService("users", "v1", PORT);
+
+service.get("/users/profile", verifyAccessToken, async (req, res) => {
 	const type = req.decoded.payloadAvecRole.type;
 	const userId = req.decoded.payloadAvecRole._id;
 	switch (type) {
@@ -47,7 +67,7 @@ service.get("/profile", verifyAccessToken, async (req, res) => {
 	}
 });
 
-service.put("/profile", verifyAccessToken, async (req, res) => {
+service.put("/users/profile", verifyAccessToken, async (req, res) => {
 	const userId = req.decoded.payloadAvecRole._id;
 	const type = req.decoded.payloadAvecRole.type;
 

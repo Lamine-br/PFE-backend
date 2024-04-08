@@ -34,14 +34,14 @@ class ServiceRegistry {
 			this.services[key].name = name;
 			this.services[key].version = version;
 			this.log.debug(
-				`Added services ${name}, version ${version} at ${ip}:${port}`
+				`Added service ${name}, version ${version} at ${ip}:${port}`
 			);
 			return key;
 		}
 
 		this.services[key].timestamp = Math.floor(new Date() / 1000);
 		this.log.debug(
-			`Updated services ${name}, version ${version} at ${ip}:${port}`
+			`Updated service ${name}, version ${version} at ${ip}:${port}`
 		);
 		return key;
 	}
@@ -50,7 +50,7 @@ class ServiceRegistry {
 		const key = name + version + ip + port;
 		delete this.services[key];
 		this.log.debug(
-			`Unregistered services ${name}, version ${version} at ${ip}:${port}`
+			`Unregistered service ${name}, version ${version} at ${ip}:${port}`
 		);
 		return key;
 	}

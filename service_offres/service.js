@@ -7,9 +7,10 @@ const Chercheur = require("../models/chercheur");
 const Categorie = require("../models/categorie");
 const connectDB = require("../database/connectDB");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
+const axios = require("axios");
 
 const service = express();
-const PORT = 3000;
+const PORT = 3003;
 
 service.use(cors({ origin: "*" }));
 service.use(express.urlencoded({ extended: true }));
@@ -17,7 +18,25 @@ service.use(express.json());
 
 connectDB();
 
-service.get("/employeur/offres/:id", verifyAccessToken, async (req, res) => {
+service.use((req, res, next) => {
+	console.log(`Request received: ${req.method} ${req.url}`);
+	next();
+});
+
+const registerService = async (serviceName, serviceVersion, servicePort) => {
+	try {
+		const response = await axios.put(
+			`http://localhost:3001/register/${serviceName}/${serviceVersion}/${servicePort}`
+		);
+		console.log(response.data); // Log the response from the registry service
+	} catch (error) {
+		console.error("Error registering service:", error);
+	}
+};
+
+registerService("offres", "v1", PORT);
+
+service.get("/offres/employeur/:id", verifyAccessToken, async (req, res) => {
 	const offreId = req.params.id;
 	try {
 		const userId = req.decoded.payloadAvecRole._id;
@@ -36,7 +55,7 @@ service.get("/employeur/offres/:id", verifyAccessToken, async (req, res) => {
 	}
 });
 
-service.get("/employeur/offres", verifyAccessToken, async (req, res) => {
+service.get("/offres/employeur", verifyAccessToken, async (req, res) => {
 	try {
 		console.log(req.decoded.payloadAvecRole._id);
 		const userId = req.decoded.payloadAvecRole._id;
@@ -75,7 +94,7 @@ service.get("/offres/:id", async (req, res) => {
 	}
 });
 
-service.post("/employeur/offres/add", verifyAccessToken, async (req, res) => {
+service.post("/offres/employeur/add", verifyAccessToken, async (req, res) => {
 	const { titre, metier, description, debut, fin, remuneration } = req.body;
 	const employeur = req.decoded.payloadAvecRole._id;
 
@@ -119,7 +138,7 @@ service.post("/employeur/offres/add", verifyAccessToken, async (req, res) => {
 	}
 });
 
-service.put("/employeur/offres/:id", verifyAccessToken, async (req, res) => {
+service.put("/offres/employeur/:id", verifyAccessToken, async (req, res) => {
 	const { titre, metier, description, debut, fin, remuneration } = req.body;
 	const employeur = req.decoded.payloadAvecRole._id;
 	const id_offre = req.params.id;
@@ -162,7 +181,7 @@ service.put("/employeur/offres/:id", verifyAccessToken, async (req, res) => {
 	}
 });
 
-service.delete("/employeur/offres/:id", verifyAccessToken, async (req, res) => {
+service.delete("/offres/employeur/:id", verifyAccessToken, async (req, res) => {
 	const offreId = req.params.id;
 
 	try {
@@ -190,7 +209,7 @@ service.delete("/employeur/offres/:id", verifyAccessToken, async (req, res) => {
 	}
 });
 
-service.post("/chercheur/offres/save", verifyAccessToken, async (req, res) => {
+service.post("/offres/chercheur/save", verifyAccessToken, async (req, res) => {
 	const id = req.body.id;
 	const id_chercheur = req.decoded.payloadAvecRole._id;
 
@@ -227,7 +246,7 @@ service.post("/chercheur/offres/save", verifyAccessToken, async (req, res) => {
 });
 
 service.get(
-	"/chercheur/enregistrements",
+	"/offres/chercheur/enregistrements",
 	verifyAccessToken,
 	async (req, res) => {
 		const id_chercheur = req.decoded.payloadAvecRole._id;
@@ -249,7 +268,7 @@ service.get(
 
 // ---------------------------- Gestion des métiers ----------------------------//
 
-service.post("/metiers/add", async (req, res) => {
+service.post("/offres/metiers/add", async (req, res) => {
 	const { nom, description, secteur } = req.body;
 
 	try {
@@ -268,7 +287,7 @@ service.post("/metiers/add", async (req, res) => {
 	}
 });
 
-service.get("/metiers", async (req, res) => {
+service.get("/offres/metiers", async (req, res) => {
 	try {
 		const metiers = await Metier.find();
 		return res.status(200).json(metiers);
@@ -278,7 +297,7 @@ service.get("/metiers", async (req, res) => {
 	}
 });
 
-service.get("/metiers/:id", async (req, res) => {
+service.get("/offres/metiers/:id", async (req, res) => {
 	const metierId = req.params.id;
 	try {
 		const metier = await Metier.findOne({ _id: metierId });
@@ -293,7 +312,7 @@ service.get("/metiers/:id", async (req, res) => {
 	}
 });
 
-service.put("/metiers/:id", async (req, res) => {
+service.put("/offres/metiers/:id", async (req, res) => {
 	const { nom, secteur, description } = req.body;
 	const id_metier = req.params.id;
 
@@ -318,7 +337,7 @@ service.put("/metiers/:id", async (req, res) => {
 	}
 });
 
-service.delete("/metiers/:id", async (req, res) => {
+service.delete("/offres/metiers/:id", async (req, res) => {
 	const metierId = req.params.id;
 
 	try {
@@ -338,7 +357,7 @@ service.delete("/metiers/:id", async (req, res) => {
 // ---------------------------- Gestion des catégories ----------------------------//
 
 service.post(
-	"/employeur/categories/add",
+	"/offres/employeur/categories/add",
 	verifyAccessToken,
 	async (req, res) => {
 		const { nom, description } = req.body;
@@ -361,19 +380,23 @@ service.post(
 	}
 );
 
-service.get("/employeur/categories", verifyAccessToken, async (req, res) => {
-	const employeur = req.decoded.payloadAvecRole._id;
-	try {
-		const categories = await Categorie.find({ employeur: employeur });
-		return res.status(200).json(categories);
-	} catch (error) {
-		console.log(error);
-		return res.status(500).json({ message: "Internal server error" });
+service.get(
+	"/offres/employeur/categories",
+	verifyAccessToken,
+	async (req, res) => {
+		const employeur = req.decoded.payloadAvecRole._id;
+		try {
+			const categories = await Categorie.find({ employeur: employeur });
+			return res.status(200).json(categories);
+		} catch (error) {
+			console.log(error);
+			return res.status(500).json({ message: "Internal server error" });
+		}
 	}
-});
+);
 
 service.get(
-	"/employeur/categories/:id",
+	"/offres/employeur/categories/:id",
 	verifyAccessToken,
 	async (req, res) => {
 		const id = req.params.id;
@@ -392,7 +415,7 @@ service.get(
 );
 
 service.delete(
-	"/employeur/categories/:id",
+	"/offres/employeur/categories/:id",
 	verifyAccessToken,
 	async (req, res) => {
 		const id = req.params.id;
@@ -424,7 +447,7 @@ service.delete(
 );
 
 service.post(
-	"/employeur/categories/:id",
+	"/offres/employeur/categories/:id",
 	verifyAccessToken,
 	async (req, res) => {
 		const id = req.params.id;
