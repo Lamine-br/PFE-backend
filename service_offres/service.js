@@ -2,8 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const Offre = require("../models/offre");
 const Metier = require("../models/metier");
-const Employeur = require("../models/employeur");
 const Chercheur = require("../models/chercheur");
+const Employeur = require("../models/employeur");
 const Categorie = require("../models/categorie");
 const connectDB = require("../database/connectDB");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
@@ -18,23 +18,20 @@ service.use(express.json());
 
 connectDB();
 
-service.use((req, res, next) => {
-	console.log(`Request received: ${req.method} ${req.url}`);
-	next();
-});
-
-const registerService = async (serviceName, serviceVersion, servicePort) => {
-	try {
-		const response = await axios.put(
-			`http://localhost:3001/register/${serviceName}/${serviceVersion}/${servicePort}`
-		);
-		console.log(response.data); // Log the response from the registry service
-	} catch (error) {
-		console.error("Error registering service:", error);
+service.get(
+	"/offres/employeur/categories",
+	verifyAccessToken,
+	async (req, res) => {
+		const employeur = req.decoded.payloadAvecRole._id;
+		try {
+			const categories = await Categorie.find({ employeur: employeur });
+			return res.status(200).json(categories);
+		} catch (error) {
+			console.log(error);
+			return res.status(500).json({ message: "Internal server error" });
+		}
 	}
-};
-
-registerService("offres", "v1", PORT);
+);
 
 service.get("/offres/employeur/:id", verifyAccessToken, async (req, res) => {
 	const offreId = req.params.id;
@@ -71,6 +68,17 @@ service.get("/offres", async (req, res) => {
 	try {
 		const offres = await Offre.find().populate("metier employeur");
 		return res.status(200).json(offres);
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.get("/offres/metiers", async (req, res) => {
+	console.log(req);
+	try {
+		let metiers = await Metier.find();
+		return res.status(200).json(metiers);
 	} catch (error) {
 		console.log(error);
 		return res.status(500).json({ message: "Internal server error" });
@@ -266,8 +274,6 @@ service.get(
 	}
 );
 
-// ---------------------------- Gestion des métiers ----------------------------//
-
 service.post("/offres/metiers/add", async (req, res) => {
 	const { nom, description, secteur } = req.body;
 
@@ -283,16 +289,6 @@ service.post("/offres/metiers/add", async (req, res) => {
 		console.log("Métier ajouté");
 		return res.status(201).json(metierErgst);
 	} catch (error) {
-		return res.status(500).json({ message: "Internal server error" });
-	}
-});
-
-service.get("/offres/metiers", async (req, res) => {
-	try {
-		const metiers = await Metier.find();
-		return res.status(200).json(metiers);
-	} catch (error) {
-		console.log(error);
 		return res.status(500).json({ message: "Internal server error" });
 	}
 });
@@ -354,8 +350,6 @@ service.delete("/offres/metiers/:id", async (req, res) => {
 	}
 });
 
-// ---------------------------- Gestion des catégories ----------------------------//
-
 service.post(
 	"/offres/employeur/categories/add",
 	verifyAccessToken,
@@ -375,21 +369,6 @@ service.post(
 			console.log("Catégorie ajoutée");
 			return res.status(201).json(categorieErgst);
 		} catch (error) {
-			return res.status(500).json({ message: "Internal server error" });
-		}
-	}
-);
-
-service.get(
-	"/offres/employeur/categories",
-	verifyAccessToken,
-	async (req, res) => {
-		const employeur = req.decoded.payloadAvecRole._id;
-		try {
-			const categories = await Categorie.find({ employeur: employeur });
-			return res.status(200).json(categories);
-		} catch (error) {
-			console.log(error);
 			return res.status(500).json({ message: "Internal server error" });
 		}
 	}
@@ -489,5 +468,18 @@ service.post(
 		}
 	}
 );
+
+const registerService = async (serviceName, serviceVersion, servicePort) => {
+	try {
+		const response = await axios.put(
+			`http://localhost:3001/register/${serviceName}/${serviceVersion}/${servicePort}`
+		);
+		console.log(response.data); // Log the response from the registry service
+	} catch (error) {
+		console.error("Error registering service:", error);
+	}
+};
+
+registerService("offres", "v1", PORT);
 
 service.listen(PORT, () => console.log("Service is running at port " + PORT));

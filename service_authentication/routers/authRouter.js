@@ -146,20 +146,40 @@ authRouter.post("/login/chercheur", async (req, res) => {
 	}
 });
 
-authRouter.post("/upload", upload.single("image"), (req, res) => {
-	const file = req.file;
-	if (!file) {
-		return res.status(400).json("No file uploaded.");
+authRouter.post(
+	"/upload/:folderName",
+	upload.fields([{ name: "image" }, { name: "cv" }]),
+	(req, res) => {
+		const imageFiles = req.files["image"];
+		const cvFiles = req.files["cv"];
+
+		if (!imageFiles && !cvFiles) {
+			return res.status(400).json("No files uploaded.");
+		}
+
+		const uploadedFiles = {};
+
+		if (imageFiles) {
+			const imageFilePaths = imageFiles.map((file) =>
+				file.path
+					.replace(/\\/g, "/")
+					.substring(file.path.indexOf("/public") + "/public".length)
+			);
+			uploadedFiles.image = imageFilePaths;
+		}
+
+		if (cvFiles) {
+			const cvFilePaths = cvFiles.map((file) =>
+				file.path
+					.replace(/\\/g, "/")
+					.substring(file.path.indexOf("/public") + "/public".length)
+			);
+			uploadedFiles.cv = cvFilePaths;
+		}
+
+		return res.status(200).json(uploadedFiles);
 	}
-
-	// Obtenez le chemin du fichier temporaire
-	const tempFilePath = file.path.replace(/\\/g, "/");
-	const filePathWithoutPublic = tempFilePath.substring(
-		tempFilePath.indexOf("/public") + "/public".length
-	);
-
-	return res.status(200).json(filePathWithoutPublic);
-});
+);
 
 authRouter.post("/code", async (req, res) => {
 	const { email } = req.body;

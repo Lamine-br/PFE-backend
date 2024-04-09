@@ -1,9 +1,12 @@
 const express = require("express");
 const app = express();
+const cors = require("cors");
 const { createProxyMiddleware } = require("http-proxy-middleware");
 const axios = require("axios");
 
 const PORT = 3000;
+
+app.use(cors({ origin: "*" }));
 
 app.get("/", (req, res) => {
 	res.send("Hello, Express!");
@@ -38,8 +41,7 @@ const services = [
 	// Add more services as needed
 ];
 
-// Map services to create proxies dynamically
-services.forEach(async (service) => {
+async function createServiceProxy(service) {
 	const serviceInfo = await fetchServiceUrlFromRegistry(
 		service.name,
 		service.version
@@ -48,12 +50,40 @@ services.forEach(async (service) => {
 		const serviceUrl = `http://${serviceInfo.ip}:${serviceInfo.port}/${service.name}`;
 		const serviceProxy = createProxyMiddleware({
 			target: serviceUrl,
-			changeOrigin: true,
+			changeOrigin: false,
 		});
 		console.log(`Service ${service.name} URL:`, serviceUrl);
 		app.use(service.path, serviceProxy);
 	} else {
 		console.log(`Service ${service.name} not found in registry.`);
+	}
+}
+
+// Dynamically create proxies for each service
+async function createProxies() {
+	for (const service of services) {
+		await createServiceProxy(service);
+	}
+}
+
+createProxies();
+
+app.get("/services/:name", async (req, res) => {
+	const name = req.params.name;
+	try {
+		const serviceInfo = await fetchServiceUrlFromRegistry(name, "v1");
+		if (serviceInfo) {
+			const serviceUrl = `http://${serviceInfo.ip}:${serviceInfo.port}`;
+			res.status(200).json(serviceUrl);
+		}
+	} catch (error) {
+		console.error(
+			"Erreur lors de la récupération de la photo depuis le service d'authentification :",
+			error
+		);
+		res
+			.status(500)
+			.json({ message: "Erreur lors de la récupération de la photo" });
 	}
 });
 
