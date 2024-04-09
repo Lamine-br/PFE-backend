@@ -83,6 +83,7 @@ service.put("/users/profile", verifyAccessToken, async (req, res) => {
 					nationalite,
 					ville,
 					numero,
+					cv,
 				} = req.body;
 				const chercheur = await Chercheur.findById(userId);
 				if (!chercheur) {
@@ -108,6 +109,7 @@ service.put("/users/profile", verifyAccessToken, async (req, res) => {
 				if (nationalite) chercheur.nationalite = nationalite;
 				if (ville) chercheur.ville = ville;
 				if (numero) chercheur.numero = numero;
+				if (cv) chercheur.cv = cv;
 
 				await chercheur.save();
 				return res.status(200).json({

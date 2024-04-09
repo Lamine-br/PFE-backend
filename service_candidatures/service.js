@@ -12,13 +12,16 @@ const connectDB = require("../database/connectDB");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
 const moment = require("moment");
 const axios = require("axios");
+const { upload } = require("./utils/uploadFile");
 
 const service = express();
 const PORT = 3004;
 
 service.use(cors({ origin: "*" }));
-service.use(express.urlencoded({ extended: true }));
-service.use(express.json());
+service.use(express.urlencoded({ extended: true, limit: "50mb" }));
+service.use(express.json({ limit: "50mb" }));
+
+service.use(express.static("public"));
 
 connectDB();
 
@@ -40,6 +43,23 @@ const registerService = async (serviceName, serviceVersion, servicePort) => {
 	}
 };
 registerService("candidatures", "v1", PORT);
+
+service.post(
+	"/candidatures/upload/:folderName",
+	upload.single("cv"),
+	(req, res) => {
+		if (!req.file) {
+			return res.status(400).json("No file uploaded.");
+		}
+
+		const filePath = req.file.path.replace(/\\/g, "/");
+		const fileUrl = filePath.substring(
+			filePath.indexOf("/public") + "/public".length
+		);
+
+		return res.status(200).json(fileUrl);
+	}
+);
 
 service.get("/candidatures/employeur", verifyAccessToken, async (req, res) => {
 	try {
