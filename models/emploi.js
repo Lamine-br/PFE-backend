@@ -3,6 +3,10 @@ const Schema = mongoose.Schema;
 
 const emploiSchema = new Schema(
 	{
+		agenda: {
+			type: Boolean,
+			required: false,
+		},
 		chercheur: {
 			type: mongoose.Schema.Types.ObjectId,
 			ref: "Chercheur",

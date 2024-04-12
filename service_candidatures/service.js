@@ -115,6 +115,29 @@ service.get(
 );
 
 service.get(
+	"/candidatures/chercheur/spontanees/:id",
+	verifyAccessToken,
+	async (req, res) => {
+		const id = req.params.id;
+		const userId = req.decoded.payloadAvecRole._id;
+		try {
+			const candidature = await CandidatureSpontanee.findById(id);
+			if (userId !== candidature.chercheur.toString()) {
+				return res.status(403).json("Unauthorized access");
+			}
+
+			await Candidature.populate(candidature, {
+				path: "employeurs metiers chercheur",
+			});
+			return res.status(200).json(candidature);
+		} catch (error) {
+			console.log(error);
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
+
+service.get(
 	"/candidatures/chercheur/:id",
 	verifyAccessToken,
 	async (req, res) => {
@@ -490,10 +513,11 @@ service.post(
 			const updatedCandidature = await Candidature.findById(id_candidature);
 
 			// Création de l'emploi pour le chercheur
+			const agenda = false;
 			const chercheur = updatedCandidature.chercheur;
 			const offre = updatedCandidature.offre;
 
-			const emploi = new Emploi({ chercheur, offre });
+			const emploi = new Emploi({ agenda, chercheur, offre });
 			emploi.save();
 
 			console.log("Candidature validée");

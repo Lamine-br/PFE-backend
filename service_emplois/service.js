@@ -38,9 +38,39 @@ const registerService = async (serviceName, serviceVersion, servicePort) => {
 };
 registerService("emplois", "v1", PORT);
 
-service.get("/emplois/chercheur", async (req, res) => {
+service.put(
+	"/emplois/chercheur/addToAgenda",
+	verifyAccessToken,
+	async (req, res) => {
+		try {
+			const id = req.body.id;
+			console.log(id);
+			console.log("done");
+
+			const emploi = await Emploi.findById(id);
+			console.log(emploi);
+
+			if (!emploi) {
+				return res.status(404).json({ message: "Emploi introuvable" });
+			}
+
+			emploi.agenda = true;
+			await emploi.save();
+
+			return res.status(200).json(emploi);
+		} catch (error) {
+			console.log(error);
+			return res.status(500).json({ message: "Erreur interne du serveur" });
+		}
+	}
+);
+
+service.get("/emplois/chercheur", verifyAccessToken, async (req, res) => {
+	const chercheur = req.decoded.payloadAvecRole._id;
 	try {
-		const emplois = await Emploi.find().populate("offre");
+		const emplois = await Emploi.find({ chercheur: chercheur }).populate(
+			"offre"
+		);
 
 		return res.status(200).json(emplois);
 	} catch (error) {
@@ -49,7 +79,8 @@ service.get("/emplois/chercheur", async (req, res) => {
 	}
 });
 
-service.get("/emplois/chercheur/:id", async (req, res) => {
+service.get("/emplois/chercheur/:id", verifyAccessToken, async (req, res) => {
+	const chercheur = req.decoded.payloadAvecRole._id;
 	try {
 		const id = req.params.id;
 		const emploi = await Emploi.findById(id).populate("offre");
