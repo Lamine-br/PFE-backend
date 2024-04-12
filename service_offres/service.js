@@ -274,6 +274,63 @@ service.get(
 	}
 );
 
+service.post("/offres/chercheur/like", verifyAccessToken, async (req, res) => {
+	const id = req.body.id;
+	const id_chercheur = req.decoded.payloadAvecRole._id;
+
+	try {
+		const chercheur = await Chercheur.findById(id_chercheur);
+		if (id) {
+			const index = chercheur.favoris.indexOf(id);
+
+			if (index === -1) {
+				// Enregistrer l'offre si elle n'est pas déja enregistrée
+				chercheur.favoris.push(id);
+				await chercheur.save();
+				return res.status(200).json({
+					message: "Offre ajoutée aux favoris",
+					favoris: chercheur.favoris,
+				});
+			} else {
+				// Retirer l'offre des enregistrements sinon
+				chercheur.favoris.splice(index, 1);
+				await chercheur.save();
+				return res.status(200).json({
+					message: "Offre retirée des favoris",
+					favoris: chercheur.favoris,
+				});
+			}
+		} else {
+			return res.status(400).json("Aucune offre à ajouter aux favoris");
+		}
+	} catch (error) {
+		return res.status(500).json({
+			message: "Internal server error",
+		});
+	}
+});
+
+service.get(
+	"/offres/chercheur/favoris",
+	verifyAccessToken,
+	async (req, res) => {
+		const id_chercheur = req.decoded.payloadAvecRole._id;
+
+		try {
+			const chercheur = await Chercheur.findById(id_chercheur).populate({
+				path: "favoris",
+				populate: { path: "employeur" },
+			});
+			const favoris = chercheur.favoris;
+			return res.status(200).json(favoris);
+		} catch (error) {
+			return res.status(500).json({
+				message: "Internal server error",
+			});
+		}
+	}
+);
+
 service.post("/offres/metiers/add", async (req, res) => {
 	const { nom, description, secteur } = req.body;
 
