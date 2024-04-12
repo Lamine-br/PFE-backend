@@ -7,7 +7,11 @@ const candidatureSpontaneeSchema = new Schema(
 			type: mongoose.Schema.Types.ObjectId,
 			ref: "Dossier",
 		},
-		date: {
+		date_debut: {
+			type: String,
+			required: false,
+		},
+		date_fin: {
 			type: String,
 			required: false,
 		},
@@ -15,10 +19,18 @@ const candidatureSpontaneeSchema = new Schema(
 			type: mongoose.Schema.Types.ObjectId,
 			ref: "Chercheur",
 		},
-		employeur: {
-			type: mongoose.Schema.Types.ObjectId,
-			ref: "Employeur",
-		},
+		employeurs: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Employeur",
+			},
+		],
+		metiers: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Metier",
+			},
+		],
 		etiquettes: [
 			{
 				type: mongoose.Schema.Types.ObjectId,

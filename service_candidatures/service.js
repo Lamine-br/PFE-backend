@@ -2,8 +2,11 @@ const express = require("express");
 const cors = require("cors");
 const Offre = require("../models/offre");
 const Candidature = require("../models/candidature");
+const CandidatureSpontanee = require("../models/candidatureSpontanee");
 const Dossier = require("../models/dossier");
 const Chercheur = require("../models/chercheur");
+const Employeur = require("../models/employeur");
+const Metier = require("../models/metier");
 const Reponse = require("../models/reponse");
 const Emploi = require("../models/emploi");
 const Notification = require("../models/notification");
@@ -92,6 +95,24 @@ service.get("/candidatures/chercheur", verifyAccessToken, async (req, res) => {
 		return res.status(500).json({ message: "Internal server error" });
 	}
 });
+
+service.get(
+	"/candidatures/chercheur/spontanees",
+	verifyAccessToken,
+	async (req, res) => {
+		try {
+			console.log(req.decoded);
+			const userId = req.decoded.payloadAvecRole._id;
+			const candidatures = await CandidatureSpontanee.find({
+				chercheur: userId,
+			}).populate("employeurs metiers");
+			return res.status(200).json(candidatures);
+		} catch (error) {
+			console.log(error);
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
 
 service.get(
 	"/candidatures/chercheur/:id",
@@ -541,6 +562,77 @@ service.post(
 			console.log("Problème enregistrée");
 			return res.status(200).json(problemeEngst);
 		} catch (error) {
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
+
+service.post(
+	"/candidatures/chercheur/spontanees/add",
+	verifyAccessToken,
+	async (req, res) => {
+		const { employeurs, metiers, date_debut, date_fin } = req.body;
+		const chercheur = req.decoded.payloadAvecRole._id;
+
+		try {
+			const chercheurExistant = await Chercheur.findById(chercheur);
+			if (!chercheurExistant) {
+				return res.status(404).json({ message: "Chercheur introuvable" });
+			}
+
+			let cv = chercheurExistant.cv;
+			let motivation = "";
+			let commentaire = "";
+			let dossier = new Dossier({
+				cv,
+				motivation,
+				commentaire,
+			});
+
+			const savedDossier = await dossier.save();
+			dossier = savedDossier._id;
+
+			const candidature = new CandidatureSpontanee({
+				dossier,
+				date_debut,
+				date_fin,
+				chercheur,
+				employeurs,
+				metiers,
+			});
+
+			const savedCandidature = await candidature.save();
+
+			chercheurExistant.candidatures_spontanees.push(savedCandidature._id);
+			await chercheurExistant.save();
+
+			console.log("Candidature spontanée ajoutée");
+			return res.status(201).json(savedCandidature);
+		} catch (error) {
+			console.error(error);
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
+
+service.get(
+	"/candidatures/chercheur/:id",
+	verifyAccessToken,
+	async (req, res) => {
+		const id = req.params.id;
+		const userId = req.decoded.payloadAvecRole._id;
+		try {
+			const candidature = await Candidature.findById(id);
+			if (userId !== candidature.chercheur.toString()) {
+				return res.status(403).json("Unauthorized access");
+			}
+
+			await Candidature.populate(candidature, {
+				path: "offre chercheur dossier",
+			});
+			return res.status(200).json(candidature);
+		} catch (error) {
+			console.log(error);
 			return res.status(500).json({ message: "Internal server error" });
 		}
 	}

@@ -199,6 +199,19 @@ service.put("/users/profile", verifyAccessToken, async (req, res) => {
 	}
 });
 
+service.get("/users/employeurs", async (req, res) => {
+	try {
+		const employeurs = await Employeur.find({ valide: "Validé" });
+
+		if (!employeurs) {
+			return res.status(404).json("Employeurs introuvables");
+		}
+		res.status(200).json(employeurs);
+	} catch (error) {
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
 service.listen(PORT, () => {
 	console.log(`service running on port ${PORT}`);
 });
