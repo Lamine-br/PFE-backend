@@ -3,11 +3,11 @@ const Schema = mongoose.Schema;
 
 const signalementSchema = new Schema(
 	{
-		date: {
+		titre: {
 			type: String,
 			required: false,
 		},
-		motif: {
+		contenu: {
 			type: String,
 			required: false,
 		},

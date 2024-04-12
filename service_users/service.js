@@ -3,6 +3,8 @@ const cors = require("cors");
 const Employeur = require("../models/employeur");
 const Contact = require("../models/contact");
 const Chercheur = require("../models/chercheur");
+const Signalement = require("../models/signalement");
+const Bloque = require("../models/bloque");
 const connectDB = require("../database/connectDB");
 const bcrypt = require("bcrypt");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
@@ -207,6 +209,49 @@ service.get("/users/employeurs", async (req, res) => {
 			return res.status(404).json("Employeurs introuvables");
 		}
 		res.status(200).json(employeurs);
+	} catch (error) {
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.post("/users/signaler", verifyAccessToken, async (req, res) => {
+	const emetteur = req.decoded.payloadAvecRole._id;
+	const type_emetteur = req.decoded.payloadAvecRole.type;
+	const { titre, contenu, destinataire, type_destinataire } = req.body;
+	try {
+		const signalement = new Signalement({
+			titre,
+			contenu,
+			type_emetteur,
+			emetteur,
+			type_destinataire,
+			destinataire,
+		});
+
+		const savedSignalement = await signalement.save();
+
+		res.status(201).json(savedSignalement);
+	} catch (error) {
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.post("/users/bloquer", verifyAccessToken, async (req, res) => {
+	const emetteur = req.decoded.payloadAvecRole._id;
+	const type_emetteur = req.decoded.payloadAvecRole.type;
+	const { motif, destinataire, type_destinataire } = req.body;
+	try {
+		const bloque = new Bloque({
+			motif,
+			type_emetteur,
+			emetteur,
+			type_destinataire,
+			destinataire,
+		});
+
+		const savedBloque = await bloque.save();
+
+		res.status(201).json(savedBloque);
 	} catch (error) {
 		return res.status(500).json({ message: "Internal server error" });
 	}

@@ -59,12 +59,6 @@ const employeurSchema = new Schema(
 				ref: "CandidatureSpontanee",
 			},
 		],
-		reponses: [
-			{
-				type: mongoose.Schema.Types.ObjectId,
-				ref: "Reponse",
-			},
-		],
 		etiquettes: [
 			{
 				type: mongoose.Schema.Types.ObjectId,
@@ -75,12 +69,6 @@ const employeurSchema = new Schema(
 			{
 				type: mongoose.Schema.Types.ObjectId,
 				ref: "Categorie",
-			},
-		],
-		notifications: [
-			{
-				type: mongoose.Schema.Types.ObjectId,
-				ref: "Notification",
 			},
 		],
 		bloques: [

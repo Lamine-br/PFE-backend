@@ -97,24 +97,6 @@ const chercheurSchema = new Schema(
 				ref: "CritereNotification",
 			},
 		],
-		notifications: [
-			{
-				type: mongoose.Schema.Types.ObjectId,
-				ref: "Notification",
-			},
-		],
-		bloques: [
-			{
-				type: mongoose.Schema.Types.ObjectId,
-				ref: "Bloque",
-			},
-		],
-		signalements: [
-			{
-				type: mongoose.Schema.Types.ObjectId,
-				ref: "Signalement",
-			},
-		],
 		bloques_partage: [
 			{
 				type: mongoose.Schema.Types.ObjectId,

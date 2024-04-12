@@ -3,10 +3,6 @@ const Schema = mongoose.Schema;
 
 const bloqueSchema = new Schema(
 	{
-		date: {
-			type: String,
-			required: false,
-		},
 		motif: {
 			type: String,
 			required: false,
