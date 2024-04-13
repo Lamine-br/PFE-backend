@@ -10,6 +10,7 @@ const Metier = require("../models/metier");
 const Reponse = require("../models/reponse");
 const Emploi = require("../models/emploi");
 const Notification = require("../models/notification");
+const Etiquette = require("../models/etiquette");
 const Probleme = require("../models/probleme");
 const connectDB = require("../database/connectDB");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
@@ -161,6 +162,21 @@ service.get(
 );
 
 service.get(
+	"/candidatures/employeur/etiquettes",
+	verifyAccessToken,
+	async (req, res) => {
+		const userId = req.decoded.payloadAvecRole._id;
+		try {
+			const etiquettes = await Etiquette.find({ employeur: userId });
+			return res.status(200).json(etiquettes);
+		} catch (error) {
+			console.log(error);
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
+
+service.get(
 	"/candidatures/employeur/:id",
 	verifyAccessToken,
 	async (req, res) => {
@@ -172,7 +188,7 @@ service.get(
 					path: "offre",
 					match: { employeur: userId },
 				})
-				.populate("dossier chercheur")
+				.populate("dossier chercheur etiquettes")
 				.exec();
 
 			if (!candidature) {
@@ -658,6 +674,103 @@ service.get(
 		} catch (error) {
 			console.log(error);
 			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
+
+service.post(
+	"/candidatures/employeur/etiquettes/add",
+	verifyAccessToken,
+	async (req, res) => {
+		const { nom } = req.body;
+		const employeur = req.decoded.payloadAvecRole._id;
+
+		try {
+			const etiquette = new Etiquette({
+				nom,
+				employeur,
+			});
+
+			const saveEtiquette = await etiquette.save();
+
+			console.log("Etiquette ajoutée");
+			return res.status(201).json(saveEtiquette);
+		} catch (error) {
+			console.error(error);
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
+
+service.put(
+	"/candidatures/employeur/etiquettes/:id",
+	verifyAccessToken,
+	async (req, res) => {
+		const { nom } = req.body;
+		const { id } = req.params;
+		const employeur = req.decoded.payloadAvecRole._id;
+
+		try {
+			const etiquette = await Etiquette.findById(id);
+			if (!etiquette) {
+				return res.status(404).json("Etiquette introuvable");
+			}
+			if (etiquette.employeur.toString() !== employeur) {
+				return res.status(401).json("Unauthorized");
+			}
+			etiquette.nom = nom;
+			const saveEtiquette = await etiquette.save();
+
+			console.log("Etiquette modifiée");
+			return res.status(201).json(saveEtiquette);
+		} catch (error) {
+			console.error(error);
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
+
+service.post(
+	"/candidatures/employeur/etiquettes/addToCandidature",
+	verifyAccessToken,
+	async (req, res) => {
+		const { nom, id } = req.body;
+		const employeur = req.decoded.payloadAvecRole._id;
+
+		try {
+			// Vérifier si l'étiquette existe déjà pour cet employeur et avec ce nom
+			let etiquette = await Etiquette.findOne({
+				nom: nom,
+				employeur: employeur,
+			});
+
+			if (!etiquette) {
+				// Si l'étiquette n'existe pas, la créer
+				etiquette = new Etiquette({ nom: nom, employeur: employeur });
+				await etiquette.save();
+			}
+
+			// Ajouter l'ID de l'étiquette à la candidature
+			const candidature = await Candidature.findById(id);
+			if (!candidature) {
+				return res.status(404).json({ message: "Candidature introuvable" });
+			}
+
+			// Vérifier si l'étiquette est déjà associée à la candidature
+			if (candidature.etiquettes.includes(etiquette._id)) {
+				return res.status(400).json({
+					message: "Cette étiquette est déjà associée à la candidature",
+				});
+			}
+
+			// Ajouter l'ID de l'étiquette à la liste des étiquettes de la candidature
+			candidature.etiquettes.push(etiquette._id);
+			const savedCandidature = await candidature.save();
+
+			return res.status(200).json(savedCandidature);
+		} catch (error) {
+			console.log(error);
+			return res.status(500).json({ message: "Erreur interne du serveur" });
 		}
 	}
 );

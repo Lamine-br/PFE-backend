@@ -11,18 +11,6 @@ const etiquetteSchema = new Schema(
 			type: mongoose.Schema.Types.ObjectId,
 			ref: "Employeur",
 		},
-		candidatures: [
-			{
-				type: mongoose.Schema.Types.ObjectId,
-				ref: "Candidature",
-			},
-		],
-		candidatures_spontanees: [
-			{
-				type: mongoose.Schema.Types.ObjectId,
-				ref: "CandidatureSpontanee",
-			},
-		],
 	},
 	{ timestamps: true }
 );
