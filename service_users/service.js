@@ -4,6 +4,7 @@ const Employeur = require("../models/employeur");
 const Contact = require("../models/contact");
 const Chercheur = require("../models/chercheur");
 const Signalement = require("../models/signalement");
+const Alerte = require("../models/alerte");
 const Bloque = require("../models/bloque");
 const connectDB = require("../database/connectDB");
 const bcrypt = require("bcrypt");
@@ -57,7 +58,7 @@ service.get("/users/profile", verifyAccessToken, async (req, res) => {
 
 		case "chercheur":
 			try {
-				const chercheur = await Chercheur.findById(userId);
+				const chercheur = await Chercheur.findById(userId).populate("alertes");
 				if (!chercheur) {
 					return res.status(404).json("Chercheur non trouvé");
 				}
