@@ -2,8 +2,11 @@ const express = require("express");
 const cors = require("cors");
 const Offre = require("../models/offre");
 const Candidature = require("../models/candidature");
+const Notification = require("../models/notification");
 const Dossier = require("../models/dossier");
 const Chercheur = require("../models/chercheur");
+const Employeur = require("../models/employeur");
+const Contact = require("../models/contact");
 const Reponse = require("../models/reponse");
 const Alerte = require("../models/alerte");
 const Emploi = require("../models/emploi");
@@ -11,13 +14,16 @@ const connectDB = require("../database/connectDB");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
 const axios = require("axios");
 const moment = require("moment");
+const { upload } = require("./utils/uploadFile");
 
 const service = express();
 const PORT = 3005;
 
 service.use(cors({ origin: "*" }));
-service.use(express.urlencoded({ extended: true }));
-service.use(express.json());
+service.use(express.urlencoded({ extended: true, limit: "50mb" }));
+service.use(express.json({ limit: "50mb" }));
+
+service.use(express.static("public"));
 
 connectDB();
 
@@ -39,6 +45,23 @@ const registerService = async (serviceName, serviceVersion, servicePort) => {
 	}
 };
 registerService("emplois", "v1", PORT);
+
+service.post(
+	"/emplois/upload/:folderName",
+	upload.single("attestation"),
+	(req, res) => {
+		if (!req.file) {
+			return res.status(400).json("No file uploaded.");
+		}
+
+		const filePath = req.file.path.replace(/\\/g, "/");
+		const fileUrl = filePath.substring(
+			filePath.indexOf("/public") + "/public".length
+		);
+
+		return res.status(200).json(fileUrl);
+	}
+);
 
 service.put(
 	"/emplois/chercheur/addToAgenda",
@@ -81,11 +104,40 @@ service.get("/emplois/chercheur", verifyAccessToken, async (req, res) => {
 	}
 });
 
+service.get("/emplois/employeur", verifyAccessToken, async (req, res) => {
+	const employeur = req.decoded.payloadAvecRole._id;
+	try {
+		const emplois = await Emploi.find()
+			.populate({
+				path: "offre",
+				match: { employeur: employeur },
+			})
+			.populate("chercheur")
+			.exec();
+
+		return res.status(200).json(emplois);
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
 service.get("/emplois/chercheur/:id", verifyAccessToken, async (req, res) => {
 	const chercheur = req.decoded.payloadAvecRole._id;
 	try {
 		const id = req.params.id;
-		const emploi = await Emploi.findById(id).populate("offre");
+		const emploi = await Emploi.findById(id)
+			.populate({
+				path: "offre",
+				populate: {
+					path: "employeur",
+					populate: {
+						path: "contacts",
+					},
+				},
+			})
+			.populate("chercheur")
+			.exec();
 
 		return res.status(200).json(emploi);
 	} catch (error) {
@@ -167,6 +219,100 @@ service.delete(
 		} catch (error) {
 			console.error(error);
 			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
+
+service.post(
+	"/emplois/chercheur/demanderAttestation",
+	verifyAccessToken,
+	async (req, res) => {
+		const id = req.body.id;
+		const chercheur = req.decoded.payloadAvecRole._id;
+
+		try {
+			const emploi = await Emploi.findById(id).populate("offre");
+			if (!emploi) {
+				return res.status(404).json({ message: "Emploi non trouvé" });
+			}
+
+			// Vérifiez si le chercheur a le droit de demander une attestation pour cet emploi
+			if (chercheur.toString() !== emploi.chercheur.toString()) {
+				return res.status(403).json({
+					message: "Vous n'êtes pas autorisé à effectuer cette action",
+				});
+			}
+
+			emploi.attestation = "demandée";
+			await emploi.save();
+
+			// Notifier l'employeur de la demande
+			let notification = new Notification({
+				type: "Demande d'attestation",
+				contenu: "Un chercheur demande une attestation de travail",
+				lien: "/employeur/emplois/" + id,
+				date_creation: moment().format("YYYY-MM-DD"),
+				date_lecture: "",
+				statut: "non lu",
+				type_recepteur: "employeur",
+				recepteur: emploi.offre.employeur,
+			});
+			await notification.save();
+
+			console.log("Attestation demandée pour l'emploi :", id);
+			return res
+				.status(200)
+				.json({ message: "Attestation demandée avec succès" });
+		} catch (error) {
+			console.error(error);
+			return res.status(500).json({ message: "Erreur interne du serveur" });
+		}
+	}
+);
+
+service.post(
+	"/emplois/employeur/uploadAttestation",
+	verifyAccessToken,
+	async (req, res) => {
+		const { id, attestation } = req.body;
+		const employeur = req.decoded.payloadAvecRole._id;
+
+		try {
+			const emploi = await Emploi.findById(id).populate("offre");
+			if (!emploi) {
+				return res.status(404).json({ message: "Emploi non trouvé" });
+			}
+
+			// Vérifiez si le chercheur a le droit de demander une attestation pour cet emploi
+			if (employeur.toString() !== emploi.offre.employeur.toString()) {
+				return res.status(403).json({
+					message: "Vous n'êtes pas autorisé à effectuer cette action",
+				});
+			}
+
+			emploi.attestation = attestation;
+			await emploi.save();
+
+			// Notifier l'employeur de la demande
+			let notification = new Notification({
+				type: "Attestation Emploi",
+				contenu: "Un employeur a actualisé une attestation de travail",
+				lien: "/chercheur/emplois/" + id,
+				date_creation: moment().format("YYYY-MM-DD"),
+				date_lecture: "",
+				statut: "non lu",
+				type_recepteur: "chercheur",
+				recepteur: emploi.chercheur,
+			});
+			await notification.save();
+
+			console.log("Attestation mise à jour pour l'emploi :", id);
+			return res
+				.status(200)
+				.json({ message: "Attestation mise à jour avec succès" });
+		} catch (error) {
+			console.error(error);
+			return res.status(500).json({ message: "Erreur interne du serveur" });
 		}
 	}
 );

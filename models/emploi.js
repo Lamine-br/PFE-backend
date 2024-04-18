@@ -7,6 +7,10 @@ const emploiSchema = new Schema(
 			type: Boolean,
 			required: false,
 		},
+		attestation: {
+			type: String,
+			required: false,
+		},
 		chercheur: {
 			type: mongoose.Schema.Types.ObjectId,
 			ref: "Chercheur",
