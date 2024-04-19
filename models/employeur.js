@@ -43,6 +43,10 @@ const employeurSchema = new Schema(
 			type: String,
 			required: false,
 		},
+		spontanee: {
+			type: Boolean,
+			required: false,
+		},
 		adresse: {
 			rue: { type: String, required: false },
 			ville: { type: String, required: true },

@@ -142,6 +142,7 @@ service.put("/users/profile", verifyAccessToken, async (req, res) => {
 					facebook,
 					rue,
 					ville,
+					spontanee,
 					contact,
 				} = req.body;
 				const employeur = await Employeur.findById(userId);
@@ -171,6 +172,7 @@ service.put("/users/profile", verifyAccessToken, async (req, res) => {
 				if (linkedin) employeur.linkedin = linkedin;
 				if (rue) employeur.adresse.rue = rue;
 				if (ville) employeur.adresse.ville = ville;
+				if (spontanee !== null) employeur.spontanee = spontanee;
 
 				if (contact) {
 					const existingContact = await Contact.findById(contact.id);
