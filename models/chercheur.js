@@ -43,6 +43,10 @@ const chercheurSchema = new Schema(
 			type: String,
 			required: false,
 		},
+		bloque: {
+			type: Boolean,
+			required: false,
+		},
 		amis: [
 			{
 				type: mongoose.Schema.Types.ObjectId,
@@ -89,6 +93,12 @@ const chercheurSchema = new Schema(
 			{
 				type: mongoose.Schema.Types.ObjectId,
 				ref: "Emploi",
+			},
+		],
+		signalements: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Signalement",
 			},
 		],
 		criteres_notification: [

@@ -43,6 +43,10 @@ const employeurSchema = new Schema(
 			type: String,
 			required: false,
 		},
+		bloque: {
+			type: Boolean,
+			required: false,
+		},
 		spontanee: {
 			type: Boolean,
 			required: false,

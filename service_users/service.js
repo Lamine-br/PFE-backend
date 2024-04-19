@@ -233,6 +233,10 @@ service.post("/users/signaler", verifyAccessToken, async (req, res) => {
 
 		const savedSignalement = await signalement.save();
 
+		const chercheur = await Chercheur.findById(destinataire);
+		chercheur.signalements.push(signalement._id);
+		chercheur.save();
+
 		res.status(201).json(savedSignalement);
 	} catch (error) {
 		return res.status(500).json({ message: "Internal server error" });
@@ -255,6 +259,59 @@ service.post("/users/bloquer", verifyAccessToken, async (req, res) => {
 		const savedBloque = await bloque.save();
 
 		res.status(201).json(savedBloque);
+	} catch (error) {
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.get("/users", async (req, res) => {
+	try {
+		const employeurs = await Employeur.find({ valide: "Validé" });
+		const chercheurs = await Chercheur.find();
+		return res
+			.status(200)
+			.json({ employeurs: employeurs, chercheurs: chercheurs });
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.post("/users/bloquerUser", async (req, res) => {
+	try {
+		const { type, id } = req.body;
+		switch (type) {
+			case "employeur":
+				await Employeur.updateOne({ _id: id }, { bloque: true });
+				console.log("Utilisateur bloqué");
+				return res.status(200).json("Utilisateur  bloqué");
+			case "chercheur":
+				await Chercheur.updateOne({ _id: id }, { bloque: true });
+				console.log("Utilisateur bloqué");
+				return res.status(200).json("Utilisateur  bloqué");
+			default:
+				return res.status(400).json("Veuillez désigner le type");
+		}
+	} catch (error) {
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.post("/users/debloquerUser", async (req, res) => {
+	try {
+		const { type, id } = req.body;
+		switch (type) {
+			case "employeur":
+				await Employeur.updateOne({ _id: id }, { bloque: false });
+				console.log("Utilisateur bloqué");
+				return res.status(200).json("Utilisateur  débloqué");
+			case "chercheur":
+				await Chercheur.updateOne({ _id: id }, { bloque: false });
+				console.log("Utilisateur bloqué");
+				return res.status(200).json("Utilisateur  débloqué");
+			default:
+				return res.status(400).json("Veuillez désigner le type");
+		}
 	} catch (error) {
 		return res.status(500).json({ message: "Internal server error" });
 	}
