@@ -4,6 +4,7 @@ const Employeur = require("../models/employeur");
 const Contact = require("../models/contact");
 const Chercheur = require("../models/chercheur");
 const Signalement = require("../models/signalement");
+const Avertissement = require("../models/avertissement");
 const Alerte = require("../models/alerte");
 const Bloque = require("../models/bloque");
 const connectDB = require("../database/connectDB");
@@ -313,6 +314,74 @@ service.post("/users/debloquerUser", async (req, res) => {
 				return res.status(400).json("Veuillez désigner le type");
 		}
 	} catch (error) {
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.post("/users/avertirUser", async (req, res) => {
+	const emetteur = "660c0eaa42351aa9a67e559a";
+	const type_emetteur = "gestionnaire";
+	const { titre, contenu, destinataire, type_destinataire } = req.body;
+	try {
+		const avertissement = new Avertissement({
+			type_emetteur,
+			emetteur,
+			type_destinataire,
+			destinataire,
+			titre,
+			contenu,
+		});
+
+		const savedAvertissement = await avertissement.save();
+
+		switch (type_destinataire) {
+			case "employeur":
+				const employeur = await Employeur.findById(destinataire);
+				employeur.avertissements.push(savedAvertissement._id);
+				employeur.save();
+				break;
+			case "chercheur":
+				const chercheur = await Chercheur.findById(destinataire);
+				chercheur.avertissements.push(savedAvertissement._id);
+				chercheur.save();
+				break;
+		}
+		res.status(201).json(savedAvertissement);
+	} catch (error) {
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.get("/users/chercheurs/:id", async (req, res) => {
+	try {
+		const userId = req.params.id;
+		const chercheur = await Chercheur.findById(userId).populate(
+			"avertissements signalements"
+		);
+
+		if (!chercheur) {
+			return res.status(404).json("Chercheur introuvable");
+		}
+		res.status(200).json(chercheur);
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.get("/users/employeurs/:id", async (req, res) => {
+	try {
+		const userId = req.params.id;
+		const employeur = await Employeur.findById(userId).populate(
+			"contacts avertissements"
+		);
+
+		if (!employeur) {
+			return res.status(404).json("Employeur introuvable");
+		}
+		res.status(200).json(employeur);
+	} catch (error) {
+		console.log(error);
 		return res.status(500).json({ message: "Internal server error" });
 	}
 });

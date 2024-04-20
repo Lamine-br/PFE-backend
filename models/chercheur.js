@@ -101,6 +101,12 @@ const chercheurSchema = new Schema(
 				ref: "Signalement",
 			},
 		],
+		avertissements: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Avertissement",
+			},
+		],
 		criteres_notification: [
 			{
 				type: mongoose.Schema.Types.ObjectId,

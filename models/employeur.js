@@ -93,6 +93,12 @@ const employeurSchema = new Schema(
 				ref: "Signalement",
 			},
 		],
+		avertissements: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Avertissement",
+			},
+		],
 		bloques_partage: [
 			{
 				type: mongoose.Schema.Types.ObjectId,
