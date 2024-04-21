@@ -21,6 +21,12 @@ const groupeSchema = new Schema(
 				ref: "Chercheur",
 			},
 		],
+		offres: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Offres",
+			},
+		],
 	},
 	{ timestamps: true }
 );

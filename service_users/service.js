@@ -3,6 +3,7 @@ const cors = require("cors");
 const Employeur = require("../models/employeur");
 const Contact = require("../models/contact");
 const Chercheur = require("../models/chercheur");
+const Groupe = require("../models/groupe");
 const Signalement = require("../models/signalement");
 const Avertissement = require("../models/avertissement");
 const Alerte = require("../models/alerte");
@@ -380,6 +381,52 @@ service.get("/users/employeurs/:id", async (req, res) => {
 			return res.status(404).json("Employeur introuvable");
 		}
 		res.status(200).json(employeur);
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.post(
+	"/users/chercheur/addGroupe",
+	verifyAccessToken,
+	async (req, res) => {
+		try {
+			const { nom, description } = req.body;
+			const chercheur = req.decoded.payloadAvecRole._id;
+
+			const groupe = new Groupe({
+				nom,
+				description,
+				createur: chercheur,
+				membres: [chercheur],
+			});
+
+			const savedGroupe = await groupe.save();
+
+			const existingChercheur = await Chercheur.findById(chercheur);
+			existingChercheur.groupes.push(savedGroupe._id);
+			existingChercheur.save();
+
+			res.status(200).json(savedGroupe);
+		} catch (error) {
+			console.log(error);
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
+
+service.get("/users/chercheur/groupes", verifyAccessToken, async (req, res) => {
+	try {
+		const chercheur = req.decoded.payloadAvecRole._id;
+
+		const existingChercheur = await Chercheur.findById(chercheur).populate({
+			path: "groupes",
+			populate: {
+				path: "membres createur",
+			},
+		});
+		return res.status(200).json(existingChercheur.groupes);
 	} catch (error) {
 		console.log(error);
 		return res.status(500).json({ message: "Internal server error" });
