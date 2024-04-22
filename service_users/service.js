@@ -408,7 +408,7 @@ service.post(
 			existingChercheur.groupes.push(savedGroupe._id);
 			existingChercheur.save();
 
-			res.status(200).json(savedGroupe);
+			res.status(201).json(savedGroupe);
 		} catch (error) {
 			console.log(error);
 			return res.status(500).json({ message: "Internal server error" });
@@ -432,6 +432,55 @@ service.get("/users/chercheur/groupes", verifyAccessToken, async (req, res) => {
 		return res.status(500).json({ message: "Internal server error" });
 	}
 });
+
+service.post(
+	"/users/chercheur/addUserToGroupe",
+	verifyAccessToken,
+	async (req, res) => {
+		try {
+			const { id, email, numero } = req.body;
+			const chercheur = req.decoded.payloadAvecRole._id;
+
+			const groupe = await Groupe.findById(id);
+			if (chercheur.toString() !== groupe.createur.toString()) {
+				res.status(403).json("Non autorisé");
+			}
+
+			if (email) {
+				const existingChercheur = await Chercheur.findOne({ email: email });
+				// Si l'utilisateur existe, l'ajouter dans le groupe
+				if (existingChercheur) {
+					groupe.membres.push(existingChercheur._id);
+					await groupe.save();
+					existingChercheur.groupes.push(groupe._id);
+					await existingChercheur.save();
+					res.status(200).json("Chercheur ajouté");
+				} else {
+					// Si l'utilisateur n'existe pas envoyer un mail
+					res.status(200).json("Chercheur avec ce mail n'existe pas");
+				}
+			}
+
+			if (numero) {
+				const existingChercheur = await Chercheur.findOne({ numero: numero });
+				// Si l'utilisateur existe, l'ajouter dans le groupe
+				if (existingChercheur) {
+					groupe.membres.push(existingChercheur._id);
+					await groupe.save();
+					existingChercheur.groupes.push(groupe._id);
+					await existingChercheur.save();
+					res.status(200).json("Chercheur ajouté");
+				} else {
+					// Si l'utilisateur n'existe pas envoyer un SMS
+					res.status(200).json("Chercheur avec ce numero n'existe pas");
+				}
+			}
+		} catch (error) {
+			console.log(error);
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
 
 service.listen(PORT, () => {
 	console.log(`service running on port ${PORT}`);
