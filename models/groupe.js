@@ -23,8 +23,17 @@ const groupeSchema = new Schema(
 		],
 		offres: [
 			{
-				type: mongoose.Schema.Types.ObjectId,
-				ref: "Offres",
+				offre: {
+					type: mongoose.Schema.Types.ObjectId,
+					ref: "Offre",
+				},
+				emetteur: {
+					type: mongoose.Schema.Types.ObjectId,
+					ref: "Chercheur",
+				},
+				date: {
+					type: String,
+				},
 			},
 		],
 	},

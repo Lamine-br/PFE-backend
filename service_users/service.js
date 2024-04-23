@@ -5,6 +5,7 @@ const Contact = require("../models/contact");
 const Chercheur = require("../models/chercheur");
 const Groupe = require("../models/groupe");
 const Signalement = require("../models/signalement");
+const Offre = require("../models/offre");
 const Avertissement = require("../models/avertissement");
 const Alerte = require("../models/alerte");
 const Bloque = require("../models/bloque");
@@ -12,6 +13,7 @@ const connectDB = require("../database/connectDB");
 const bcrypt = require("bcrypt");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
 const axios = require("axios");
+const moment = require("moment");
 
 connectDB();
 
@@ -422,10 +424,13 @@ service.get("/users/chercheur/groupes", verifyAccessToken, async (req, res) => {
 
 		const existingChercheur = await Chercheur.findById(chercheur).populate({
 			path: "groupes",
-			populate: {
-				path: "membres createur",
-			},
+			populate: [
+				{ path: "membres" },
+				{ path: "createur" },
+				{ path: "offres", populate: [{ path: "offre" }, { path: "emetteur" }] },
+			],
 		});
+
 		return res.status(200).json(existingChercheur.groupes);
 	} catch (error) {
 		console.log(error);
@@ -475,6 +480,31 @@ service.post(
 					res.status(200).json("Chercheur avec ce numero n'existe pas");
 				}
 			}
+		} catch (error) {
+			console.log(error);
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
+
+service.post(
+	"/users/chercheur/partagerOffreDansGroupe",
+	verifyAccessToken,
+	async (req, res) => {
+		try {
+			const { id_groupe, offre } = req.body;
+			const chercheur = req.decoded.payloadAvecRole._id;
+
+			const groupe = await Groupe.findById(id_groupe);
+			groupe.offres.push({
+				offre: offre,
+				emetteur: chercheur,
+				date: moment().format("YYYY-MM-DD à HH:mm"),
+			});
+			await groupe.save();
+			return res
+				.status(200)
+				.json({ message: "Offre partagée dans le groupe avec succès" });
 		} catch (error) {
 			console.log(error);
 			return res.status(500).json({ message: "Internal server error" });
