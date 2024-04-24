@@ -8,15 +8,35 @@ const Categorie = require("../models/categorie");
 const connectDB = require("../database/connectDB");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
 const axios = require("axios");
+const { upload } = require("./utils/uploadFile");
 
 const service = express();
 const PORT = 3003;
 
 service.use(cors({ origin: "*" }));
-service.use(express.urlencoded({ extended: true }));
-service.use(express.json());
+service.use(express.urlencoded({ extended: true, limit: "50mb" }));
+service.use(express.json({ limit: "50mb" }));
+
+service.use(express.static("public"));
 
 connectDB();
+
+service.post(
+	"/offres/upload/:folderName",
+	upload.single("image"),
+	(req, res) => {
+		if (!req.file) {
+			return res.status(400).json("No file uploaded.");
+		}
+
+		const filePath = req.file.path.replace(/\\/g, "/");
+		const fileUrl = filePath.substring(
+			filePath.indexOf("/public") + "/public".length
+		);
+
+		return res.status(200).json(fileUrl);
+	}
+);
 
 service.get(
 	"/offres/employeur/categories",
@@ -103,7 +123,8 @@ service.get("/offres/:id", async (req, res) => {
 });
 
 service.post("/offres/employeur/add", verifyAccessToken, async (req, res) => {
-	const { titre, metier, description, debut, fin, remuneration } = req.body;
+	const { titre, metier, image, description, lieu, debut, fin, remuneration } =
+		req.body;
 	const employeur = req.decoded.payloadAvecRole._id;
 
 	try {
@@ -118,7 +139,9 @@ service.post("/offres/employeur/add", verifyAccessToken, async (req, res) => {
 		const offre = new Offre({
 			titre,
 			metier,
+			image,
 			description,
+			lieu,
 			debut,
 			fin,
 			remuneration,

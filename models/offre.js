@@ -15,6 +15,14 @@ const offreSchema = new Schema(
 			type: String,
 			required: false,
 		},
+		image: {
+			type: String,
+			required: false,
+		},
+		lieu: {
+			type: String,
+			required: false,
+		},
 		debut: {
 			type: String,
 			required: false,
