@@ -87,7 +87,7 @@ authRouter.post("/login/employeur", async (req, res) => {
 				type: "employeur",
 				email: employeur.email,
 				username: employeur.entreprise,
-				image: "",
+				image: employeur.image,
 			},
 			accessToken,
 			refreshToken,
@@ -343,6 +343,7 @@ authRouter.post("/register/employeur", async (req, res) => {
 	const {
 		email,
 		password,
+		image,
 		entreprise,
 		service,
 		sous_service,
@@ -361,10 +362,13 @@ authRouter.post("/register/employeur", async (req, res) => {
 	try {
 		const hashedPassword = await bcrypt.hash(password, 10);
 		const valide = "En attente";
+		const bloque = false;
+		const spontanee = false;
 
 		const employeur = new Employeur({
 			email,
 			password: hashedPassword,
+			image,
 			entreprise,
 			service,
 			sous_service,
@@ -374,6 +378,8 @@ authRouter.post("/register/employeur", async (req, res) => {
 			facebook,
 			valide,
 			adresse,
+			bloque,
+			spontanee,
 		});
 
 		const savedContacts = await Promise.all(

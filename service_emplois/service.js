@@ -107,11 +107,8 @@ service.get("/emplois/chercheur", verifyAccessToken, async (req, res) => {
 service.get("/emplois/employeur", verifyAccessToken, async (req, res) => {
 	const employeur = req.decoded.payloadAvecRole._id;
 	try {
-		const emplois = await Emploi.find()
-			.populate({
-				path: "offre",
-				match: { employeur: employeur },
-			})
+		const emplois = await Emploi.find({ "offre.employeur": employeur })
+			.populate("offre")
 			.populate("chercheur")
 			.exec();
 

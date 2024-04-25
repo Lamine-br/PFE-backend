@@ -69,11 +69,8 @@ service.get("/candidatures/employeur", verifyAccessToken, async (req, res) => {
 	try {
 		console.log(req.decoded.payloadAvecRole._id);
 		const userId = req.decoded.payloadAvecRole._id;
-		const candidatures = await Candidature.find()
-			.populate({
-				path: "offre",
-				match: { employeur: userId },
-			})
+		const candidatures = await Candidature.find({ "offre.employeur": userId })
+			.populate("offre")
 			.populate("chercheur")
 			.exec();
 		return res.status(200).json(candidatures);
