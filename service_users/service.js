@@ -512,6 +512,24 @@ service.post(
 	}
 );
 
+service.get("/users/statistics", async (req, res) => {
+	try {
+		const nombreEmployeurs = (await Employeur.find()).length;
+		const nombreChercheurs = (await Chercheur.find()).length;
+
+		const nombreInscrits = nombreEmployeurs + nombreChercheurs;
+
+		res.status(200).json({
+			inscrits: nombreInscrits,
+			employeurs: nombreEmployeurs,
+			chercheurs: nombreChercheurs,
+		});
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
 service.listen(PORT, () => {
 	console.log(`service running on port ${PORT}`);
 });

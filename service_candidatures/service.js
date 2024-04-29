@@ -771,5 +771,100 @@ service.post(
 		}
 	}
 );
+service.get("/candidatures/statistics", async (req, res) => {
+	try {
+		const { lieu, metier } = req.query;
+
+		// Agrégation par semaine
+		const statisticsSemaine = await Candidature.aggregate([
+			{
+				$lookup: {
+					from: "offres",
+					localField: "offre",
+					foreignField: "_id",
+					as: "offre",
+				},
+			},
+			{
+				$lookup: {
+					from: "metiers",
+					localField: "offre.metier",
+					foreignField: "_id",
+					as: "metier",
+				},
+			},
+			{
+				$match: {
+					"offre.lieu": lieu,
+					"metier.nom": metier,
+				},
+			},
+			{
+				$project: {
+					semaine: { $isoWeek: "$createdAt" },
+					annee: { $isoWeekYear: "$createdAt" },
+				},
+			},
+			{
+				$group: {
+					_id: {
+						semaine: "$semaine",
+						annee: "$annee",
+					},
+					total: { $sum: 1 },
+				},
+			},
+		]);
+
+		// Agrégation par mois
+		const statisticsMois = await Candidature.aggregate([
+			{
+				$lookup: {
+					from: "offres",
+					localField: "offre",
+					foreignField: "_id",
+					as: "offre",
+				},
+			},
+			{
+				$lookup: {
+					from: "metiers",
+					localField: "offre.metier",
+					foreignField: "_id",
+					as: "metier",
+				},
+			},
+			{
+				$match: {
+					"offre.lieu": lieu,
+					"metier.nom": metier,
+				},
+			},
+			{
+				$project: {
+					mois: { $month: "$createdAt" },
+					annee: { $year: "$createdAt" },
+				},
+			},
+			{
+				$group: {
+					_id: {
+						mois: "$mois",
+						annee: "$annee",
+					},
+					total: { $sum: 1 },
+				},
+			},
+		]);
+
+		res.status(200).json({
+			statisticsSemaine,
+			statisticsMois,
+		});
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
 
 service.listen(PORT, () => console.log("Service is running at port " + PORT));
