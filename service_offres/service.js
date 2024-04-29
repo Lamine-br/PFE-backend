@@ -105,6 +105,93 @@ service.get("/offres/metiers", async (req, res) => {
 	}
 });
 
+service.get("/offres/statistics", async (req, res) => {
+	try {
+		let { lieu, metier } = req.query;
+		let matchQuery = {};
+
+		if (metier) {
+			matchQuery["metier.nom"] = metier;
+		} else {
+			matchQuery["metier.nom"] = { $exists: true };
+		}
+
+		if (lieu) {
+			matchQuery.lieu = lieu;
+		} else {
+			matchQuery.lieu = { $exists: true }; // Filtre les offres où le lieu est défini
+		}
+
+		// Agrégation par semaine
+		const statisticsSemaine = await Offre.aggregate([
+			{
+				$lookup: {
+					from: "metiers",
+					localField: "metier",
+					foreignField: "_id",
+					as: "metier",
+				},
+			},
+			{
+				$match: matchQuery,
+			},
+			{
+				$project: {
+					semaine: { $isoWeek: "$createdAt" },
+					annee: { $isoWeekYear: "$createdAt" },
+				},
+			},
+			{
+				$group: {
+					_id: {
+						semaine: "$semaine",
+						annee: "$annee",
+					},
+					total: { $sum: 1 },
+				},
+			},
+		]);
+
+		// Agrégation par mois
+		const statisticsMois = await Offre.aggregate([
+			{
+				$lookup: {
+					from: "metiers",
+					localField: "metier",
+					foreignField: "_id",
+					as: "metier",
+				},
+			},
+			{
+				$match: matchQuery,
+			},
+			{
+				$project: {
+					mois: { $month: "$createdAt" },
+					annee: { $year: "$createdAt" },
+				},
+			},
+			{
+				$group: {
+					_id: {
+						mois: "$mois",
+						annee: "$annee",
+					},
+					total: { $sum: 1 },
+				},
+			},
+		]);
+
+		res.status(200).json({
+			statisticsSemaine,
+			statisticsMois,
+		});
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
 service.get("/offres/:id", async (req, res) => {
 	const offreId = req.params.id;
 	try {

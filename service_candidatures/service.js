@@ -771,9 +771,23 @@ service.post(
 		}
 	}
 );
+
 service.get("/candidatures/statistics", async (req, res) => {
 	try {
-		const { lieu, metier } = req.query;
+		let { lieu, metier } = req.query;
+		let matchQuery = {};
+
+		if (metier) {
+			matchQuery["metier.nom"] = metier;
+		} else {
+			matchQuery["metier.nom"] = { $exists: true };
+		}
+
+		if (lieu) {
+			matchQuery["offre.lieu"] = lieu;
+		} else {
+			matchQuery["offre.lieu"] = { $exists: true }; // Filtre les offres où le lieu est défini
+		}
 
 		// Agrégation par semaine
 		const statisticsSemaine = await Candidature.aggregate([
@@ -794,10 +808,7 @@ service.get("/candidatures/statistics", async (req, res) => {
 				},
 			},
 			{
-				$match: {
-					"offre.lieu": lieu,
-					"metier.nom": metier,
-				},
+				$match: matchQuery,
 			},
 			{
 				$project: {
@@ -835,10 +846,7 @@ service.get("/candidatures/statistics", async (req, res) => {
 				},
 			},
 			{
-				$match: {
-					"offre.lieu": lieu,
-					"metier.nom": metier,
-				},
+				$match: matchQuery,
 			},
 			{
 				$project: {
