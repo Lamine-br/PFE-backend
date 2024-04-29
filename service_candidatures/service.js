@@ -875,4 +875,85 @@ service.get("/candidatures/statistics", async (req, res) => {
 	}
 });
 
+service.get("/candidatures/statisticsMetiers", async (req, res) => {
+	try {
+		let { lieu, mois, annee } = req.query;
+		let matchQuery = {};
+
+		if (lieu) {
+			matchQuery["offre.lieu"] = lieu;
+		} else {
+			matchQuery["offre.lieu"] = { $exists: true }; // Filtre les offres où le lieu est défini
+		}
+
+		// Filtrer par mois et année si les valeurs sont fournies
+		if (mois && annee) {
+			const startDate = moment(`${annee}-${mois}-01`, "YYYY-MM-DD");
+			const endDate = startDate.clone().endOf("month");
+			matchQuery.createdAt = {
+				$gte: startDate.toDate(),
+				$lt: endDate.toDate(),
+			};
+		} else if (mois) {
+			const startDate = moment(`${moment().year()}-${mois}-01`, "YYYY-MM-DD");
+			const endDate = startDate.clone().endOf("month");
+			matchQuery.createdAt = {
+				$gte: startDate.toDate(),
+				$lt: endDate.toDate(),
+			};
+		} else if (annee) {
+			const startDate = moment(`${annee}-01-01`, "YYYY-MM-DD");
+			const endDate = startDate.clone().endOf("year");
+			matchQuery.createdAt = {
+				$gte: startDate.toDate(),
+				$lt: endDate.toDate(),
+			};
+		}
+
+		// Agrégation
+		const statistics = await Candidature.aggregate([
+			{
+				$lookup: {
+					from: "offres",
+					localField: "offre",
+					foreignField: "_id",
+					as: "offre",
+				},
+			},
+			{
+				$lookup: {
+					from: "metiers",
+					localField: "offre.metier",
+					foreignField: "_id",
+					as: "metier",
+				},
+			},
+			{
+				$match: matchQuery,
+			},
+			{
+				$project: {
+					metier: "$metier.nom",
+				},
+			},
+			{
+				$group: {
+					_id: "$metier",
+					total: { $sum: 1 },
+				},
+			},
+			{
+				$sort: { total: -1 }, // Trier par ordre décroissant de la somme
+			},
+		]);
+
+		res.status(200).json({
+			statistics,
+		});
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
 service.listen(PORT, () => console.log("Service is running at port " + PORT));

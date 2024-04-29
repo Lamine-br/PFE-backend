@@ -9,6 +9,7 @@ const connectDB = require("../database/connectDB");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
 const axios = require("axios");
 const { upload } = require("./utils/uploadFile");
+const moment = require("moment");
 
 const service = express();
 const PORT = 3003;
@@ -74,7 +75,6 @@ service.get("/offres/employeur/:id", verifyAccessToken, async (req, res) => {
 
 service.get("/offres/employeur", verifyAccessToken, async (req, res) => {
 	try {
-		console.log(req.decoded.payloadAvecRole._id);
 		const userId = req.decoded.payloadAvecRole._id;
 		const offres = await Offre.find({ employeur: userId }).populate("metier");
 		return res.status(200).json(offres);
@@ -95,7 +95,6 @@ service.get("/offres", async (req, res) => {
 });
 
 service.get("/offres/metiers", async (req, res) => {
-	console.log(req);
 	try {
 		let metiers = await Metier.find();
 		return res.status(200).json(metiers);
@@ -185,6 +184,79 @@ service.get("/offres/statistics", async (req, res) => {
 		res.status(200).json({
 			statisticsSemaine,
 			statisticsMois,
+		});
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.get("/offres/statisticsMetiers", async (req, res) => {
+	try {
+		let { lieu, mois, annee } = req.query;
+		let matchQuery = {};
+
+		if (lieu) {
+			matchQuery.lieu = lieu;
+		} else {
+			matchQuery.lieu = { $exists: true }; // Filtre les offres où le lieu est défini
+		}
+
+		// Filtrer par mois et année si les valeurs sont fournies
+		if (mois && annee) {
+			const startDate = moment(`${annee}-${mois}-01`, "YYYY-MM-DD");
+			const endDate = startDate.clone().endOf("month");
+			matchQuery.createdAt = {
+				$gte: startDate.toDate(),
+				$lt: endDate.toDate(),
+			};
+		} else if (mois) {
+			const startDate = moment(`${moment().year()}-${mois}-01`, "YYYY-MM-DD");
+			const endDate = startDate.clone().endOf("month");
+			matchQuery.createdAt = {
+				$gte: startDate.toDate(),
+				$lt: endDate.toDate(),
+			};
+		} else if (annee) {
+			const startDate = moment(`${annee}-01-01`, "YYYY-MM-DD");
+			const endDate = startDate.clone().endOf("year");
+			matchQuery.createdAt = {
+				$gte: startDate.toDate(),
+				$lt: endDate.toDate(),
+			};
+		}
+
+		// Agrégation
+		const statistics = await Offre.aggregate([
+			{
+				$lookup: {
+					from: "metiers",
+					localField: "metier",
+					foreignField: "_id",
+					as: "metier",
+				},
+			},
+			{
+				$match: matchQuery,
+			},
+			{
+				$project: {
+					metier: "$metier.nom",
+				},
+			},
+			{
+				$group: {
+					_id: "$metier",
+					total: { $sum: 1 },
+				},
+			},
+			{
+				$sort: { total: -1 }, // Trier par ordre décroissant de la somme
+			},
+		]);
+
+		res.status(200).json({
+			statistics,
 		});
 	} catch (error) {
 		console.log(error);
