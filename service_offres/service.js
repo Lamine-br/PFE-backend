@@ -94,6 +94,29 @@ service.get("/offres", async (req, res) => {
 	}
 });
 
+service.get("/offres/search", async (req, res) => {
+	try {
+		let { search, metier, lieu } = req.query;
+
+		let offres = await Offre.find().populate("metier employeur");
+		offres = offres.filter((offre) => {
+			return (
+				(metier
+					? offre.metier.nom.toLocaleLowerCase() === metier.toLocaleLowerCase()
+					: true) &&
+				(lieu ? offre.lieu === lieu : true) &&
+				(search
+					? offre.titre.includes(search) || offre.description.includes(search)
+					: true)
+			);
+		});
+		return res.status(200).json(offres);
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
 service.get("/offres/metiers", async (req, res) => {
 	try {
 		let metiers = await Metier.find();

@@ -427,7 +427,13 @@ service.get("/users/chercheur/groupes", verifyAccessToken, async (req, res) => {
 			populate: [
 				{ path: "membres" },
 				{ path: "createur" },
-				{ path: "offres", populate: [{ path: "offre" }, { path: "emetteur" }] },
+				{
+					path: "offres",
+					populate: [
+						{ path: "offre", populate: { path: "employeur" } },
+						{ path: "emetteur" },
+					],
+				},
 			],
 		});
 

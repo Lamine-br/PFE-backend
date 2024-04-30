@@ -119,6 +119,11 @@ const chercheurSchema = new Schema(
 				ref: "BloquePartage",
 			},
 		],
+		recherches: [
+			{
+				type: String,
+			},
+		],
 	},
 	{ timestamps: true }
 );
