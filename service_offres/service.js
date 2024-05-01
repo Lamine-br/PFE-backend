@@ -117,6 +117,37 @@ service.get("/offres/search", async (req, res) => {
 	}
 });
 
+service.get("/offres/advancedSearch", async (req, res) => {
+	try {
+		let {
+			date_debut,
+			date_fin,
+			salaire_min,
+			salaire_max,
+			entreprise,
+			lieu,
+			metier,
+		} = req.query;
+
+		let offres = await Offre.find().populate("metier employeur");
+		offres = offres.filter((offre) => {
+			return (
+				(date_debut ? moment(offre.debut).isSame(date_debut, "day") : true) &&
+				(date_fin ? moment(offre.fin).isSame(date_fin, "day") : true) &&
+				(salaire_min ? offre.salaire >= salaire_min : true) &&
+				(salaire_max ? offre.salaire >= salaire_max : true) &&
+				(entreprise ? offre.entreprise === entreprise : true) &&
+				(lieu ? offre.lieu === lieu : true) &&
+				(metier ? offre.metier === metier : true)
+			);
+		});
+		return res.status(200).json(offres);
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
 service.get("/offres/metiers", async (req, res) => {
 	try {
 		let metiers = await Metier.find();
