@@ -86,7 +86,22 @@ service.get("/offres/employeur", verifyAccessToken, async (req, res) => {
 
 service.get("/offres", async (req, res) => {
 	try {
+		let { lieu } = req.query;
+
 		const offres = await Offre.find().populate("metier employeur");
+
+		if (lieu) {
+			// Trouver les offres ayant le même lieu que celui spécifié
+			const offresMemeLieu = offres.filter((offre) => offre.lieu === lieu);
+
+			// Trouver les offres qui n'ont pas le même lieu
+			const offresAutresLieux = offres.filter((offre) => offre.lieu !== lieu);
+
+			// Fusionner les deux tableaux
+			const offresOrdonnees = [...offresMemeLieu, ...offresAutresLieux];
+			return res.status(200).json(offresOrdonnees);
+		}
+
 		return res.status(200).json(offres);
 	} catch (error) {
 		console.log(error);
