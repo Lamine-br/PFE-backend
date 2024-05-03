@@ -115,8 +115,8 @@ service.get("/offres/search", async (req, res) => {
 		let { search, metier, lieu } = req.query;
 
 		const header = req.headers["authorization"];
-		const token = header.split(" ")[1];
-		if (token) {
+		if (header) {
+			const token = header.split(" ")[1];
 			jwt.verify(token, `${process.env.JWT_SECRET}`, (err, decoded) => {
 				if (err) {
 					return res
