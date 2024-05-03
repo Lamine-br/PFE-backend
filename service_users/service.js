@@ -9,6 +9,7 @@ const Offre = require("../models/offre");
 const Avertissement = require("../models/avertissement");
 const Alerte = require("../models/alerte");
 const Bloque = require("../models/bloque");
+const Consultation = require("../models/consultation");
 const connectDB = require("../database/connectDB");
 const bcrypt = require("bcrypt");
 const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
@@ -217,6 +218,88 @@ service.get("/users/employeurs", async (req, res) => {
 		}
 		res.status(200).json(employeurs);
 	} catch (error) {
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.post("/users/consultations", async (req, res) => {
+	const { lieu } = req.body;
+
+	try {
+		const consultation = new Consultation({
+			lieu,
+			IP: req.ip,
+		});
+
+		const savedConsultation = await consultation.save();
+
+		return res.status(201).json(savedConsultation);
+	} catch (error) {
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.get("/users/consultations", async (req, res) => {
+	try {
+		let { lieu } = req.query;
+		let matchQuery = {};
+
+		if (lieu) {
+			matchQuery.lieu = lieu;
+		} else {
+			matchQuery.lieu = { $exists: true }; // Filtre les offres où le lieu est défini
+		}
+
+		// Agrégation par semaine
+		const statisticsSemaine = await Consultation.aggregate([
+			{
+				$match: matchQuery,
+			},
+			{
+				$project: {
+					semaine: { $isoWeek: "$createdAt" },
+					annee: { $isoWeekYear: "$createdAt" },
+				},
+			},
+			{
+				$group: {
+					_id: {
+						semaine: "$semaine",
+						annee: "$annee",
+					},
+					total: { $sum: 1 },
+				},
+			},
+		]);
+
+		// Agrégation par mois
+		const statisticsMois = await Consultation.aggregate([
+			{
+				$match: matchQuery,
+			},
+			{
+				$project: {
+					mois: { $month: "$createdAt" },
+					annee: { $year: "$createdAt" },
+				},
+			},
+			{
+				$group: {
+					_id: {
+						mois: "$mois",
+						annee: "$annee",
+					},
+					total: { $sum: 1 },
+				},
+			},
+		]);
+
+		res.status(200).json({
+			statisticsSemaine,
+			statisticsMois,
+		});
+	} catch (error) {
+		console.log(error);
 		return res.status(500).json({ message: "Internal server error" });
 	}
 });

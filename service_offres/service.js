@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
 const Offre = require("../models/offre");
 const Metier = require("../models/metier");
 const Chercheur = require("../models/chercheur");
@@ -112,6 +113,25 @@ service.get("/offres", async (req, res) => {
 service.get("/offres/search", async (req, res) => {
 	try {
 		let { search, metier, lieu } = req.query;
+
+		const header = req.headers["authorization"];
+		const token = header.split(" ")[1];
+		if (token) {
+			jwt.verify(token, `${process.env.JWT_SECRET}`, (err, decoded) => {
+				if (err) {
+					return res
+						.status(403)
+						.json({ message: "Failed to authenticate token" });
+				}
+				req.decoded = decoded;
+			});
+			const id = req.decoded.payloadAvecRole._id;
+			const chercheur = await Chercheur.findById(id);
+			if (chercheur && search) {
+				chercheur.recherches.push(search);
+				await chercheur.save();
+			}
+		}
 
 		let offres = await Offre.find().populate("metier employeur");
 		offres = offres.filter((offre) => {
