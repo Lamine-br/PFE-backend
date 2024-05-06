@@ -107,12 +107,17 @@ service.get("/emplois/chercheur", verifyAccessToken, async (req, res) => {
 service.get("/emplois/employeur", verifyAccessToken, async (req, res) => {
 	const employeur = req.decoded.payloadAvecRole._id;
 	try {
-		const emplois = await Emploi.find({ "offre.employeur": employeur })
+		const emplois = await Emploi.find()
 			.populate("offre")
 			.populate("chercheur")
 			.exec();
 
-		return res.status(200).json(emplois);
+		const emploisFiltres = emplois.filter(
+			(emploi) =>
+				emploi.offre && emploi.offre.employeur.toString() === employeur
+		);
+
+		return res.status(200).json(emploisFiltres);
 	} catch (error) {
 		console.log(error);
 		return res.status(500).json({ message: "Internal server error" });

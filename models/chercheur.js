@@ -49,8 +49,25 @@ const chercheurSchema = new Schema(
 		},
 		amis: [
 			{
-				type: mongoose.Schema.Types.ObjectId,
-				ref: "Chercheur",
+				ami: {
+					type: mongoose.Schema.Types.ObjectId,
+					ref: "Chercheur",
+				},
+				offresPartagees: [
+					{
+						offre: {
+							type: mongoose.Schema.Types.ObjectId,
+							ref: "Offre",
+						},
+						emetteur: {
+							type: mongoose.Schema.Types.ObjectId,
+							ref: "Chercheur",
+						},
+						date: {
+							type: String,
+						},
+					},
+				],
 			},
 		],
 		groupes: [

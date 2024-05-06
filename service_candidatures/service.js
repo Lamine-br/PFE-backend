@@ -17,6 +17,7 @@ const { verifyAccessToken } = require("./middlewares/verifyAccessToken");
 const moment = require("moment");
 const axios = require("axios");
 const { upload } = require("./utils/uploadFile");
+const mongoose = require("mongoose");
 
 const service = express();
 const PORT = 3004;
@@ -67,13 +68,18 @@ service.post(
 
 service.get("/candidatures/employeur", verifyAccessToken, async (req, res) => {
 	try {
-		console.log(req.decoded.payloadAvecRole._id);
 		const userId = req.decoded.payloadAvecRole._id;
-		const candidatures = await Candidature.find({ "offre.employeur": userId })
+		let candidatures = await Candidature.find()
 			.populate("offre")
 			.populate("chercheur")
 			.exec();
-		return res.status(200).json(candidatures);
+
+		const candidaturesFiltrees = candidatures.filter(
+			(candidature) =>
+				candidature.offre && candidature.offre.employeur.toString() === userId
+		);
+		
+		return res.status(200).json(candidaturesFiltrees);
 	} catch (error) {
 		console.log(error);
 		return res.status(500).json({ message: "Internal server error" });

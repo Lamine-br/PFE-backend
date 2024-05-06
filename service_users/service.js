@@ -601,6 +601,126 @@ service.post(
 	}
 );
 
+service.post("/users/chercheur/addAmi", verifyAccessToken, async (req, res) => {
+	try {
+		const { email, numero } = req.body;
+
+		if (email || numero) {
+			const chercheur = await Chercheur.findById(
+				req.decoded.payloadAvecRole._id
+			);
+			let newAmis = {};
+			if (email) {
+				newAmis = await Chercheur.findOne({ email: email });
+			} else {
+				newAmis = await Chercheur.findOne({ numero: numero });
+			}
+			if (newAmis) {
+				// Vérifier si l'utilisateur est déjà dans le tableau des amis
+				const amiExistant = chercheur.amis.some((ami) =>
+					ami.ami.equals(newAmis._id)
+				);
+				if (amiExistant) {
+					return res
+						.status(400)
+						.json("L'utilisateur est déjà dans votre liste d'amis");
+				}
+
+				const nouvelAmi = {
+					ami: newAmis,
+				};
+				const nouvelAmi1 = {
+					ami: chercheur,
+				};
+				chercheur.amis.push(nouvelAmi);
+				newAmis.amis.push(nouvelAmi1);
+
+				await chercheur.save();
+				await newAmis.save();
+
+				return res.status(201).json("Ami ajouté");
+			} else {
+				return res.status(404).json("Utilisateur introuvable");
+			}
+		} else {
+			res.status(400).json("Email manquant");
+		}
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.get("/users/chercheur/amis", verifyAccessToken, async (req, res) => {
+	try {
+		const chercheur = req.decoded.payloadAvecRole._id;
+
+		const existingChercheur = await Chercheur.findById(chercheur).populate({
+			path: "amis",
+			populate: [
+				{ path: "ami" },
+				{ path: "offresPartagees.offre", populate: { path: "employeur" } },
+				{ path: "offresPartagees.emetteur" },
+			],
+		});
+
+		return res.status(200).json(existingChercheur.amis);
+	} catch (error) {
+		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+service.post(
+	"/users/chercheur/partagerAmi",
+	verifyAccessToken,
+	async (req, res) => {
+		try {
+			const { id_ami, offre } = req.body;
+			const chercheur = await Chercheur.findById(
+				req.decoded.payloadAvecRole._id
+			);
+			const ami = await Chercheur.findById(id_ami);
+
+			if (!ami) {
+				return res.status(404).json({ message: "L'ami spécifié n'existe pas" });
+			}
+			const offreExistante = await Offre.findById(offre);
+			if (!offreExistante) {
+				return res
+					.status(404)
+					.json({ message: "L'offre spécifiée n'existe pas" });
+			}
+
+			const indexAmi = chercheur.amis.findIndex((ami) =>
+				ami.ami.equals(id_ami)
+			);
+			const indexAmi1 = ami.amis.findIndex((ami) =>
+				ami.ami.equals(chercheur._id)
+			);
+
+			const Partage = {
+				offre: offre,
+				emetteur: chercheur,
+				date: moment().format("YYYY-MM-DD à HH:mm"),
+			};
+
+			chercheur.amis[indexAmi].offresPartagees.push(Partage);
+			ami.amis[indexAmi1].offresPartagees.push(Partage);
+
+			await ami.save();
+			await chercheur.save();
+
+			return res
+				.status(200)
+				.json({ message: "Offre partagée avec votre amis avec succès" });
+		} catch (error) {
+			console.log(error);
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
+
 service.get("/users/statistics", async (req, res) => {
 	try {
 		const nombreEmployeurs = (await Employeur.find()).length;
