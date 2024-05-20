@@ -78,7 +78,7 @@ service.get("/candidatures/employeur", verifyAccessToken, async (req, res) => {
 			(candidature) =>
 				candidature.offre && candidature.offre.employeur.toString() === userId
 		);
-		
+
 		return res.status(200).json(candidaturesFiltrees);
 	} catch (error) {
 		console.log(error);
@@ -155,6 +155,12 @@ service.get(
 
 			await Candidature.populate(candidature, {
 				path: "offre chercheur dossier",
+			});
+			await Candidature.populate(candidature, {
+				path: "offre",
+				populate: {
+					path: "employeur",
+				},
 			});
 			return res.status(200).json(candidature);
 		} catch (error) {
