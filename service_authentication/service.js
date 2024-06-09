@@ -4,6 +4,8 @@ require("dotenv").config();
 const connectDB = require("../database/connectDB");
 const authRouter = require("./routers/authRouter");
 const axios = require("axios");
+const amqp = require("amqplib/callback_api");
+const jwt = require("jsonwebtoken");
 
 const service = express();
 const PORT = 3002;
@@ -33,6 +35,59 @@ const registerService = async (serviceName, serviceVersion, servicePort) => {
 		console.error("Error registering service:", error);
 	}
 };
+
+function validateToken(token, callback) {
+	jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+		if (err) {
+			callback(null, false);
+		} else {
+			callback(decoded, true);
+		}
+	});
+}
+
+// Connect to RabbitMQ
+amqp.connect("amqp://localhost", function (error0, connection) {
+	if (error0) {
+		throw error0;
+	}
+	connection.createChannel(function (error1, channel) {
+		if (error1) {
+			throw error1;
+		}
+		const exchangeName = "authExchange";
+		const requestQueue = "auth_request_queue";
+
+		channel.assertExchange(exchangeName, "direct", { durable: false });
+		channel.assertQueue(requestQueue, { durable: false });
+		channel.bindQueue(requestQueue, exchangeName, "authRequest");
+
+		channel.consume(requestQueue, function (msg) {
+			const token = msg.content.toString();
+			console.log(msg);
+			console.log(token);
+			validateToken(token, (decoded, isValid) => {
+				const response = {
+					isValid: isValid,
+					user: decoded,
+				};
+				console.log(response);
+
+				channel.sendToQueue(
+					msg.properties.replyTo,
+					Buffer.from(JSON.stringify(response)),
+					{
+						correlationId: msg.properties.correlationId,
+					}
+				);
+
+				console.log("Response sent to", msg.properties.replyTo);
+
+				channel.ack(msg);
+			});
+		});
+	});
+});
 
 registerService("auth", "v1", PORT);
 
