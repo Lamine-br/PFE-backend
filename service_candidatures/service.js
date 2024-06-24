@@ -257,6 +257,21 @@ service.post(
 			offreExistante.candidatures.push(savedCandidature._id);
 			await offreExistante.save();
 
+			// Notifier l'employeur de la candidature
+			let notification = new Notification({
+				type: "Message",
+				contenu:
+					"Un chercheur vient de candidater pour l'offre " +
+					offreExistante.titre,
+				lien: "/employeur/candidatures/" + savedCandidature._id,
+				date_creation: moment().format("YYYY-MM-DD"),
+				date_lecture: "",
+				statut: "non lu",
+				type_recepteur: "employeur",
+				recepteur: offreExistante.employeur,
+			});
+			await notification.save();
+
 			console.log("Candidature ajoutée");
 			return res.status(201).json(savedCandidature);
 		} catch (error) {

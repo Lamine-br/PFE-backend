@@ -418,7 +418,8 @@ service.post("/offres/employeur/add", verifyAccessToken, async (req, res) => {
 });
 
 service.put("/offres/employeur/:id", verifyAccessToken, async (req, res) => {
-	const { titre, metier, description, debut, fin, remuneration } = req.body;
+	const { titre, metier, image, description, debut, fin, remuneration } =
+		req.body;
 	const employeur = req.decoded.payloadAvecRole._id;
 	const id_offre = req.params.id;
 
@@ -445,6 +446,7 @@ service.put("/offres/employeur/:id", verifyAccessToken, async (req, res) => {
 
 		offre.titre = titre || offre.titre;
 		offre.metier = metier || offre.metier;
+		offre.image = image || offre.image;
 		offre.description = description || offre.description;
 		offre.debut = debut || offre.debut;
 		offre.fin = fin || offre.fin;

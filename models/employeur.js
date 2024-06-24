@@ -57,7 +57,7 @@ const employeurSchema = new Schema(
 		},
 		adresse: {
 			rue: { type: String, required: false },
-			ville: { type: String, required: true },
+			ville: { type: String, required: false },
 		},
 		contacts: [
 			{

@@ -1,8 +1,8 @@
 const {
 	employeurController,
 } = require("../../controllers/employeurController");
-const Employeur = require("../../models/employeur");
-const Contact = require("../../models/contact");
+const Employeur = require("../../../models/employeur");
+const Contact = require("../../../models/contact");
 
 describe("Employeur Controller", () => {
 	const mockEmployeur = {
