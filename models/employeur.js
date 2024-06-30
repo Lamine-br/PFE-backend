@@ -13,7 +13,7 @@ const employeurSchema = new Schema(
 		},
 		image: {
 			type: String,
-			required: true,
+			required: false,
 		},
 		entreprise: {
 			type: String,

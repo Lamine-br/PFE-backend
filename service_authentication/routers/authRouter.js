@@ -88,12 +88,39 @@ authRouter.post("/login/employeur", async (req, res) => {
 				email: employeur.email,
 				username: employeur.entreprise,
 				image: employeur.image,
+				bloque: employeur.bloque,
+				valide: employeur.valide,
 			},
 			accessToken,
 			refreshToken,
 		});
 	} catch (error) {
 		console.log(error);
+		return res.status(500).json({ message: "Internal server error" });
+	}
+});
+
+authRouter.post("/reset-password/employeur", async (req, res) => {
+	const { email, newPassword } = req.body;
+
+	try {
+		user = await Employeur.findOne({ email });
+
+		// Si aucun utilisateur correspondant n'est trouvé
+		if (!user) {
+			return res.status(404).json({ message: "User not found" });
+		}
+
+		// Hasher le nouveau mot de passe
+		const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+		// Mettre à jour le mot de passe dans la base de données
+		user.password = hashedPassword;
+		await user.save();
+
+		return res.status(200).json({ message: "Password reset successful" });
+	} catch (error) {
+		console.error("Error resetting password:", error);
 		return res.status(500).json({ message: "Internal server error" });
 	}
 });
@@ -218,7 +245,7 @@ authRouter.post("/code", async (req, res) => {
 		await mailer.sendMail({
 			from: `${process.env.EMAIL}`,
 			to: email,
-			subject: "Code de confirmation",
+			subject: "Intérim - Code de confirmation",
 			text: `Votre code de confirmation est : ${code}`,
 		});
 		console.log("Email envoyé");

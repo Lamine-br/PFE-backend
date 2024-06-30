@@ -101,6 +101,24 @@ service.get("/candidatures/chercheur", verifyAccessToken, async (req, res) => {
 });
 
 service.get(
+	"/candidatures/employeur/spontanees",
+	verifyAccessToken,
+	async (req, res) => {
+		try {
+			console.log(req.decoded);
+			const employeur = req.decoded.payloadAvecRole._id;
+			const candidatures = await CandidatureSpontanee.find({
+				employeurs: { $in: [employeur] },
+			}).populate("chercheur metiers");
+			return res.status(200).json(candidatures);
+		} catch (error) {
+			console.log(error);
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
+
+service.get(
 	"/candidatures/chercheur/spontanees",
 	verifyAccessToken,
 	async (req, res) => {
@@ -130,6 +148,28 @@ service.get(
 				return res.status(403).json("Unauthorized access");
 			}
 
+			await Candidature.populate(candidature, {
+				path: "employeurs metiers chercheur",
+			});
+			return res.status(200).json(candidature);
+		} catch (error) {
+			console.log(error);
+			return res.status(500).json({ message: "Internal server error" });
+		}
+	}
+);
+
+service.get(
+	"/candidatures/employeur/spontanees/:id",
+	verifyAccessToken,
+	async (req, res) => {
+		const id = req.params.id;
+		const userId = req.decoded.payloadAvecRole._id;
+		try {
+			const candidature = await CandidatureSpontanee.findById(id);
+			if (!candidature.employeurs.includes(userId)) {
+				return res.status(403).json("Unauthorized access");
+			}
 			await Candidature.populate(candidature, {
 				path: "employeurs metiers chercheur",
 			});
@@ -395,6 +435,23 @@ service.post(
 				contenu,
 			});
 			const reponseEngst = await reponse.save();
+
+			// Notifier l'employeur du message
+			const candidatureErgt = await Candidature.findById(candidature).populate(
+				"offre"
+			);
+			let notification = new Notification({
+				type: "Message",
+				contenu: "Un chercheur vous a contacté",
+				lien: "/employeur/candidatures/" + candidature,
+				date_creation: moment().format("YYYY-MM-DD"),
+				date_lecture: "",
+				statut: "non lu",
+				type_recepteur: "employeur",
+				recepteur: candidatureErgt.offre.employeur,
+			});
+			await notification.save();
+
 			return res.status(200).json(reponseEngst);
 		} catch (error) {
 			return res.status(500).json({ message: "Internal server error" });
