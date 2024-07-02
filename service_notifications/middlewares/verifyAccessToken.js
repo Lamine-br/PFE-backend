@@ -36,7 +36,6 @@ async function verifyAccessToken(req, res, next) {
 		channel.consume(
 			responseQueue.queue,
 			(msg) => {
-				console.log(msg);
 				if (msg.properties.correlationId === correlationId) {
 					const response = JSON.parse(msg.content.toString());
 
@@ -64,6 +63,7 @@ async function verifyAccessToken(req, res, next) {
 
 function generateUuid() {
 	return (
+		"service_notifications:" +
 		Math.random().toString() +
 		Math.random().toString() +
 		Math.random().toString()

@@ -7,6 +7,7 @@ const axios = require("axios");
 const PORT = 3000;
 
 app.use(cors({ origin: "*" }));
+app.use(cors({ origin: true, credentials: true }));
 
 app.get("/", (req, res) => {
 	res.send("Hello, Express!");

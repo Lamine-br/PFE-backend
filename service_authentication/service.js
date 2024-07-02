@@ -64,8 +64,6 @@ amqp.connect("amqp://localhost", function (error0, connection) {
 
 		channel.consume(requestQueue, function (msg) {
 			const token = msg.content.toString();
-			console.log(msg);
-			console.log(token);
 			validateToken(token, (decoded, isValid) => {
 				const response = {
 					isValid: isValid,
@@ -80,8 +78,13 @@ amqp.connect("amqp://localhost", function (error0, connection) {
 						correlationId: msg.properties.correlationId,
 					}
 				);
-
-				console.log("Response sent to", msg.properties.replyTo);
+				const serviceName = msg.properties.correlationId.split(":")[0];
+				console.log(
+					"Response sent to",
+					serviceName,
+					"in",
+					msg.properties.replyTo
+				);
 
 				channel.ack(msg);
 			});
