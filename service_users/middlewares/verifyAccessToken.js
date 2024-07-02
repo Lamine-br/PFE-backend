@@ -39,7 +39,6 @@ async function verifyAccessToken(req, res, next) {
 				console.log(msg);
 				if (msg.properties.correlationId === correlationId) {
 					const response = JSON.parse(msg.content.toString());
-					console.log(response);
 
 					if (response.isValid) {
 						req.decoded = response.user;
